@@ -1,5 +1,6 @@
 {
-	"name": "symphonix",
+	"name": "symphonix-dev",
+	"runArgs": ["--name", "symphonix-dev"],
 	"image": "mcr.microsoft.com/devcontainers/typescript-node:22",
 	"containerEnv": {
 		"MODEL_RUNNER_URL": "http://model-runner.docker.internal/engines/v1",
