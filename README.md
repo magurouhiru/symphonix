@@ -15,6 +15,7 @@
    npm run dev
    ```
 4. http://localhost:5173 を開き、作りたいものを入力して「プランを作る」を押すと、ステップ一覧が表示されます（タイトル・説明の編集、並べ替え、追加、削除ができます）。
+   「このプランで実装する」を押すと、ステップを 1 つずつ順番にモデルに実装させ、生成したファイルを `workspace/<日時>/` に書き出します（git には入りません）。
    モデルとの接続だけを確かめたいときは http://localhost:5173/chat を使ってください。
 
 ## 設定
@@ -23,5 +24,6 @@
 | --- | --- | --- |
 | `MODEL_RUNNER_URL` | `http://model-runner.docker.internal/engines/v1` | Model Runner の OpenAI 互換 API |
 | `MODEL` | `ai/smollm2` | 使うモデル |
+| `WORKSPACE_DIR` | `./workspace` | 生成コードの書き出し先 |
 
 どちらも `.devcontainer/devcontainer.json` の `containerEnv` で変更できます。
