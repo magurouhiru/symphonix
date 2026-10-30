@@ -7,6 +7,7 @@
 	let reply = $state('');
 	let audioUrl = $state('');
 	let error = $state('');
+	let ttsModel = $state('supertonic-3');
 
 	async function start() {
 		error = '';
@@ -61,7 +62,7 @@
 			res = await fetch('/api/speech', {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify({ text: reply })
+				body: JSON.stringify({ text: reply, model: ttsModel })
 			});
 			if (!res.ok) throw new Error((await res.json()).error);
 			audioUrl = URL.createObjectURL(await res.blob());
@@ -75,6 +76,14 @@
 
 <h1>symphonix</h1>
 <p><a href="/">プラン作成に戻る</a> | 音声で話しかける</p>
+
+<p>
+	読み上げモデル:
+	<select bind:value={ttsModel}>
+		<option value="supertonic-3">Supertonic 3（軽量・多言語）</option>
+		<option value="audio-cpp-irodori-voicedesign">Irodori（日本語向け）</option>
+	</select>
+</p>
 
 {#if recording}
 	<button onclick={stop}>■ 録音を止めて送る</button>
