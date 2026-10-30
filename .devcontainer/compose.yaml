@@ -1,0 +1,39 @@
+services:
+  app:
+    image: mcr.microsoft.com/devcontainers/typescript-node:22
+    container_name: symphonix-dev
+    command: sleep infinity
+    volumes:
+      - ..:/workspaces/symphonix
+    environment:
+      AI_BASE_URL: http://localai:8080/v1
+      MODEL: gemma-4-e4b-it-qat-q4_0
+      IMAGE_MODEL: sd-1.5-ggml
+
+  # 文章と画像の生成をまとめて受け持つ OpenAI 互換サーバー
+  localai:
+    image: localai/localai:latest-gpu-nvidia-cuda-12
+    container_name: symphonix-localai
+    # 起動時にギャラリーからモデルを取得する（初回は数GBのダウンロードあり）
+    command: [gemma-4-e4b-it-qat-q4_0, sd-1.5-ggml]
+    ports:
+      - 8080:8080
+    environment:
+      MODELS_PATH: /models
+      # VRAM 8GB に収めるため、同時に読み込むモデルは 1 つだけにする
+      LOCALAI_MAX_ACTIVE_BACKENDS: 1
+      LOCALAI_CONTEXT_SIZE: 16384
+    volumes:
+      - models:/models
+      - backends:/backends
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+
+volumes:
+  models:
+  backends:
