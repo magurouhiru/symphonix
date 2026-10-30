@@ -9,13 +9,15 @@ services:
       AI_BASE_URL: http://localai:8080/v1
       MODEL: gemma-4-e4b-it-qat-q4_0
       IMAGE_MODEL: sd-1.5-ggml
+      STT_MODEL: whisper-small
+      TTS_MODEL: supertonic-3
 
   # 文章と画像の生成をまとめて受け持つ OpenAI 互換サーバー
   localai:
     image: localai/localai:latest-gpu-nvidia-cuda-12
     container_name: symphonix-localai
     # 起動時にギャラリーからモデルを取得する（初回は数GBのダウンロードあり）
-    command: [gemma-4-e4b-it-qat-q4_0, sd-1.5-ggml]
+    command: [gemma-4-e4b-it-qat-q4_0, sd-1.5-ggml, whisper-small, supertonic-3]
     ports:
       - 8080:8080
     environment:
