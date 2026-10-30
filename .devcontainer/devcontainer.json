@@ -1,0 +1,15 @@
+{
+	"name": "symphonix",
+	"image": "mcr.microsoft.com/devcontainers/typescript-node:22",
+	"containerEnv": {
+		"MODEL_RUNNER_URL": "http://model-runner.docker.internal/engines/v1",
+		"MODEL": "ai/smollm2"
+	},
+	"forwardPorts": [5173],
+	"postCreateCommand": "npm install",
+	"customizations": {
+		"vscode": {
+			"extensions": ["svelte.svelte-vscode"]
+		}
+	}
+}
