@@ -1,6 +1,6 @@
-// Docker Model Runner の OpenAI 互換 API を呼び出す
-const baseUrl = process.env.MODEL_RUNNER_URL ?? 'http://model-runner.docker.internal/engines/v1';
-const model = process.env.MODEL ?? 'ai/gemma4:e4b';
+// LocalAI の OpenAI 互換 API を呼び出す
+const baseUrl = process.env.AI_BASE_URL ?? 'http://localai:8080/v1';
+const model = process.env.MODEL ?? 'gemma-4-e4b-it-qat-q4_0';
 
 export type ChatMessage = { role: 'system' | 'user' | 'assistant'; content: string };
 
@@ -11,7 +11,7 @@ export async function chat(messages: ChatMessage[]): Promise<string> {
 		body: JSON.stringify({ model, messages })
 	});
 	if (!res.ok) {
-		throw new Error(`Model Runner error ${res.status}: ${await res.text()}`);
+		throw new Error(`AI server error ${res.status}: ${await res.text()}`);
 	}
 	const data = await res.json();
 	return data.choices?.[0]?.message?.content ?? '';

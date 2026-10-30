@@ -27,7 +27,7 @@
 </script>
 
 <h1>symphonix</h1>
-<p>Docker Model Runner との接続確認</p>
+<p>モデルとの接続確認</p>
 
 <form onsubmit={send}>
 	<textarea bind:value={prompt} rows="4" cols="60" placeholder="モデルへのメッセージ"></textarea>
