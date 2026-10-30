@@ -1,6 +1,6 @@
 // Docker Model Runner の OpenAI 互換 API を呼び出す
 const baseUrl = process.env.MODEL_RUNNER_URL ?? 'http://model-runner.docker.internal/engines/v1';
-const model = process.env.MODEL ?? 'ai/smollm2';
+const model = process.env.MODEL ?? 'ai/gemma4:e4b';
 
 export type ChatMessage = { role: 'system' | 'user' | 'assistant'; content: string };
 
