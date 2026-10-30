@@ -2,8 +2,6 @@
 const baseUrl = process.env.AI_BASE_URL ?? 'http://localai:8080/v1';
 const sttModel = process.env.STT_MODEL ?? 'whisper-small';
 const ttsModel = process.env.TTS_MODEL ?? 'supertonic-3';
-// 画面で切り替えて聞き比べられる読み上げモデル
-export const ttsModels = ['supertonic-3', 'audio-cpp-irodori-voicedesign'];
 
 export async function transcribe(audio: Blob, filename: string): Promise<string> {
 	const form = new FormData();
@@ -28,11 +26,11 @@ function plainText(text: string): string {
 		.trim();
 }
 
-export async function speak(text: string, model = ttsModel): Promise<Response> {
+export async function speak(text: string): Promise<Response> {
 	const res = await fetch(`${baseUrl}/audio/speech`, {
 		method: 'POST',
 		headers: { 'Content-Type': 'application/json' },
-		body: JSON.stringify({ model, input: plainText(text), language: 'ja' })
+		body: JSON.stringify({ model: ttsModel, input: plainText(text), language: 'ja' })
 	});
 	if (!res.ok) {
 		throw new Error(`AI server error ${res.status}: ${await res.text()}`);

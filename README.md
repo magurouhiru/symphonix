@@ -9,7 +9,7 @@
 
 1. VS Code でこのリポジトリを開き、「Reopen in Container」を実行します。
    開発用コンテナ `symphonix-dev` と LocalAI のコンテナ `symphonix-localai` が一緒に起動し、`npm install` も自動で走ります。
-   初回は LocalAI がモデル（Gemma 4 E4B、Stable Diffusion 1.5、Whisper small、読み上げ用の Supertonic 3 と Irodori）をダウンロードするので時間がかかります。
+   初回は LocalAI がモデル（Gemma 4 E4B、Stable Diffusion 1.5、Whisper small、Supertonic 3）をダウンロードするので時間がかかります。
    進み具合は http://localhost:8080 の LocalAI の画面か、`docker logs -f symphonix-localai` で確認できます。
 2. コンテナ内で開発サーバーを起動します。
    ```sh
@@ -31,7 +31,7 @@ VRAM 8GB に収めるため、LocalAI は同時に 1 つのモデルしか読み
 | `MODEL` | `gemma-4-e4b-it-qat-q4_0` | 文章・コード生成に使うモデル |
 | `IMAGE_MODEL` | `sd-1.5-ggml` | 画像生成に使うモデル |
 | `STT_MODEL` | `whisper-small` | 文字起こしに使うモデル |
-| `TTS_MODEL` | `supertonic-3` | 読み上げに使うモデル（`/voice` の画面では Irodori に切り替え可） |
+| `TTS_MODEL` | `supertonic-3` | 読み上げに使うモデル |
 | `WORKSPACE_DIR` | `./workspace` | 生成コードの書き出し先 |
 
 アプリ側の値は `.devcontainer/compose.yaml` の `app` の `environment` で変えられます。
