@@ -24,6 +24,20 @@
 | --- | --- | --- |
 | `MODEL_RUNNER_URL` | `http://model-runner.docker.internal/engines/v1` | Model Runner の OpenAI 互換 API |
 | `MODEL` | `ai/gemma4:e4b` | 使うモデル |
+| `MODEL_RUNNER_IMAGE_URL` | `http://model-runner.docker.internal/engines/diffusers/v1` | Model Runner の画像生成 API |
+| `IMAGE_MODEL` | `ai/stable-diffusion:Q4` | 画像生成に使うモデル |
 | `WORKSPACE_DIR` | `./workspace` | 生成コードの書き出し先 |
 
 どちらも `.devcontainer/devcontainer.json` の `containerEnv` で変更できます。
+
+## 画像生成（試作）
+
+http://localhost:5173/image でプロンプトを入れると、Model Runner の Diffusers エンジンで画像を生成します。
+事前にホスト側で次を実行してください。
+
+```sh
+docker model reinstall-runner --backend diffusers --gpu cuda
+docker model pull ai/stable-diffusion:Q4
+```
+
+Docker のドキュメントでは Diffusers エンジンは Linux + NVIDIA GPU のみ対応で、Windows / macOS は未対応とされています。

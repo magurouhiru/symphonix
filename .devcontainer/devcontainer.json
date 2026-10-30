@@ -4,7 +4,9 @@
 	"image": "mcr.microsoft.com/devcontainers/typescript-node:22",
 	"containerEnv": {
 		"MODEL_RUNNER_URL": "http://model-runner.docker.internal/engines/v1",
-		"MODEL": "ai/gemma4:e4b"
+		"MODEL": "ai/gemma4:e4b",
+		"MODEL_RUNNER_IMAGE_URL": "http://model-runner.docker.internal/engines/diffusers/v1",
+		"IMAGE_MODEL": "ai/stable-diffusion:Q4"
 	},
 	"forwardPorts": [5173],
 	"postCreateCommand": "npm install",
