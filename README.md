@@ -9,7 +9,7 @@
 
 1. VS Code でこのリポジトリを開き、「Reopen in Container」を実行します。
    開発用コンテナ `symphonix-dev` と LocalAI のコンテナ `symphonix-localai` が一緒に起動し、`npm install` も自動で走ります。
-   初回は LocalAI がモデル（Gemma 4 E4B と Stable Diffusion 1.5）をダウンロードするので時間がかかります。
+   初回は LocalAI がモデル（Gemma 4 E4B、Stable Diffusion 1.5、Whisper small、Kokoro 日本語）をダウンロードするので時間がかかります。
    進み具合は http://localhost:8080 の LocalAI の画面か、`docker logs -f symphonix-localai` で確認できます。
 2. コンテナ内で開発サーバーを起動します。
    ```sh
@@ -19,6 +19,7 @@
    「このプランで実装する」を押すと、ステップを 1 つずつ順番にモデルに実装させ、生成したファイルを `workspace/<日時>/` に書き出します（git には入りません）。
    - モデルとの接続だけを確かめたいときは http://localhost:5173/chat
    - 画像生成は http://localhost:5173/image
+   - 音声で話しかけるのは http://localhost:5173/voice（録音 → 文字起こし → 返事 → 読み上げ）
 
 VRAM 8GB に収めるため、LocalAI は同時に 1 つのモデルしか読み込みません。文章と画像を切り替えた直後の 1 回目は読み込み待ちで遅くなります。
 
@@ -29,6 +30,8 @@ VRAM 8GB に収めるため、LocalAI は同時に 1 つのモデルしか読み
 | `AI_BASE_URL` | `http://localai:8080/v1` | LocalAI の OpenAI 互換 API |
 | `MODEL` | `gemma-4-e4b-it-qat-q4_0` | 文章・コード生成に使うモデル |
 | `IMAGE_MODEL` | `sd-1.5-ggml` | 画像生成に使うモデル |
+| `STT_MODEL` | `whisper-small` | 文字起こしに使うモデル |
+| `TTS_MODEL` | `kokoros-ja` | 読み上げに使うモデル |
 | `WORKSPACE_DIR` | `./workspace` | 生成コードの書き出し先 |
 
 アプリ側の値は `.devcontainer/compose.yaml` の `app` の `environment` で変えられます。

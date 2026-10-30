@@ -69,7 +69,7 @@
 </script>
 
 <h1>symphonix</h1>
-<p><a href="/chat">モデル接続確認</a> | <a href="/image">画像生成の確認</a></p>
+<p><a href="/chat">モデル接続確認</a> | <a href="/image">画像生成の確認</a> | <a href="/voice">音声で話しかける</a></p>
 
 <form onsubmit={generate}>
 	<textarea bind:value={want} rows="4" cols="60" placeholder="作りたいもの（例: TODOアプリ）"></textarea>
