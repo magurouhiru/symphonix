@@ -1,11 +1,12 @@
 import { chat } from '#lib/ai/chat.server.js';
 import { personaFor, withPersona } from '#lib/personas/store.server.js';
-import { readProject, writeFiles, type GeneratedFile, type Target } from '#lib/players/workspace.server.js';
+import { writeFiles, type GeneratedFile, type Target } from '#lib/players/workspace.server.js';
+import { contextText, projectContext } from './context.server.js';
 import type { PlanStep } from './types.js';
 
 // コードを JSON に入れると引用符や改行のエスケープを間違えやすいので、ファイルは区切り行で囲んで返させる
 const SYSTEM_PROMPT = `You are a software developer implementing a plan one step at a time.
-You are given what the user wants to build, the whole plan, the files written so far, and the step to implement now.
+You are given what the user wants to build, the whole plan, the project's files (all of them, or only the relevant ones for a large project), and the step to implement now.
 Implement only the current step. Return the complete content of every file you create or change.
 Write each file exactly like this, with nothing between the marker lines but the raw file content (no code fences, no escaping):
 === FILE: relative/path/to/file ===
@@ -21,20 +22,20 @@ export async function implementStep(
 	request: string,
 	steps: PlanStep[],
 	index: number,
-	feedback = ''
+	feedback = '',
+	// このステップで書いたファイル。直すときは必ず中身を渡す
+	written: string[] = []
 ): Promise<GeneratedFile[]> {
-	const existing = await readProject(target);
 	const plan = steps.map((s, i) => `${i + 1}. ${s.title}: ${s.description}`).join('\n');
-	const filesText = existing.length
-		? existing.map((f) => `=== FILE: ${f.path} ===\n${f.content}\n=== END FILE ===`).join('\n')
-		: '(no files yet)';
 	const step = steps[index];
 	const persona = personaFor('code');
+	const task = `${request}\n\nCurrent step: ${step.title}\n${step.description}`;
+	const filesText = contextText(await projectContext(target, task, persona.resolvedModel, written));
 	const messages = [
 		{ role: 'system' as const, content: withPersona(persona.prompt, SYSTEM_PROMPT) },
 		{
 			role: 'user' as const,
-			content: `What to build:\n${request}\n\nPlan:\n${plan}\n\nFiles so far:\n${filesText}\n\nCurrent step (${index + 1}): ${step.title}\n${step.description}${
+			content: `What to build:\n${request}\n\nPlan:\n${plan}\n\nProject files:\n${filesText}\n\nCurrent step (${index + 1}): ${step.title}\n${step.description}${
 				feedback ? `\n\nAutomated checks and reviewers found these problems in your work on this step. Fix them:\n${feedback}` : ''
 			}`
 		}

@@ -23,7 +23,7 @@ export async function reviewStep(
 	index: number,
 	paths: string[]
 ): Promise<Review[]> {
-	const files = (await readProject(target)).filter((f) => paths.includes(f.path));
+	const files = await readProject(target, paths);
 	const plan = steps.map((s, i) => `${i + 1}. ${s.title}: ${s.description}`).join('\n');
 	const filesText = files.map((f) => `=== FILE: ${f.path} ===\n${numbered(f.content)}\n=== END FILE ===`).join('\n');
 	const step = steps[index];

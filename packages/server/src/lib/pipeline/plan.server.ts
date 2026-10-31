@@ -1,5 +1,7 @@
 import { chat } from '#lib/ai/chat.server.js';
 import { personaFor, withPersona } from '#lib/personas/store.server.js';
+import type { Target } from '#lib/players/workspace.server.js';
+import { contextText, projectContext } from './context.server.js';
 import type { PlanStep } from './types.js';
 
 const SYSTEM_PROMPT = `You are a software planner. The user describes something they want to build.
@@ -8,11 +10,21 @@ Respond with JSON only, in this exact shape:
 {"steps": [{"title": "short title", "description": "what to implement in this step"}]}
 Write titles and descriptions in the same language as the user.`;
 
-export async function createPlan(request: string): Promise<PlanStep[]> {
+const EXISTING_PROMPT = `
+The user wants to change an existing project, whose files are shown after the request.
+Plan only the changes; do not plan to rebuild what already exists. Name the files each step changes or adds.`;
+
+// target を渡すと、そのフォルダにある既存のプロジェクトを変える前提でプランを作る
+export async function createPlan(request: string, target?: Target): Promise<PlanStep[]> {
 	const persona = personaFor('plan');
+	const context = target ? await projectContext(target, request, persona.resolvedModel) : null;
+	const existing = context && context.paths.length > 0;
 	const messages = [
-		{ role: 'system' as const, content: withPersona(persona.prompt, SYSTEM_PROMPT) },
-		{ role: 'user' as const, content: request }
+		{ role: 'system' as const, content: withPersona(persona.prompt, SYSTEM_PROMPT + (existing ? EXISTING_PROMPT : '')) },
+		{ role: 'user' as const, content: existing ? `${request}
+
+Existing project:
+${contextText(context)}` : request }
 	];
 	// 読み取れない返事が来たら、もう一度だけ頼み直す
 	try {

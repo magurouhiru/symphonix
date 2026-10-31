@@ -21,7 +21,7 @@
 	});
 </script>
 
-<p>プレイヤーの作業フォルダにあるものを ZIP でダウンロードできます。</p>
+<p>プレイヤーの作業フォルダにあるものを ZIP でダウンロードしたり、改修したりできます。</p>
 <p>プレイヤー: <PlayerPicker bind:selected={playerId} /></p>
 
 {#if error}
@@ -46,6 +46,7 @@
 					<td>
 						{#if project.files}
 							<a href="/api/projects/{encodeURIComponent(project.name)}/download?player={encodeURIComponent(playerId)}" download>ZIP でダウンロード</a>
+							<a href="/?folder={encodeURIComponent(project.name)}">改修する</a>
 						{/if}
 					</td>
 				</tr>

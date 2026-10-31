@@ -5,6 +5,7 @@
 	import PlayerPicker from '#lib/players/PlayerPicker.svelte';
 	import { postJson } from '#lib/shared/api.js';
 	import { errorMessage } from '#lib/shared/errors.js';
+	import { page } from '$app/state';
 	import type { PlayerInfo } from '@symphonix/protocol';
 
 	// 作業ごとの担当ペルソナ（表示用）
@@ -38,7 +39,19 @@
 	// どのプレイヤーの作業フォルダの、どのフォルダに作るか
 	let playerId = $state('');
 	let player = $state<PlayerInfo>();
-	let folder = $state('');
+	// プロジェクト一覧の「改修する」から来たら、そのフォルダを選んでおく
+	let folder = $state(page.url.searchParams.get('folder') ?? '');
+
+	// 作業フォルダにある既存のプロジェクト。同じ名前のフォルダを選ぶと、それを改修する
+	let projects = $state<{ name: string; files: number }[]>([]);
+	$effect(() => {
+		if (!playerId) return;
+		fetch(`/api/projects?player=${encodeURIComponent(playerId)}`)
+			.then((r) => r.json())
+			.then((data) => (projects = data.projects ?? []))
+			.catch(() => (projects = []));
+	});
+	const existing = $derived(projects.find((p) => p.name === folder.trim() && p.files > 0));
 
 	const pipeline = new PipelineRun();
 
@@ -58,7 +71,8 @@
 		loading = true;
 		error = '';
 		try {
-			steps = (await postJson<{ steps: PlanStep[] }>('/api/plan', { request: want })).steps;
+			const target = existing ? { player: playerId, project: existing.name } : {};
+			steps = (await postJson<{ steps: PlanStep[] }>('/api/plan', { request: want, ...target })).steps;
 		} catch (e) {
 			error = errorMessage(e);
 		} finally {
@@ -83,8 +97,26 @@
 	</p>
 {/if}
 
+<p>
+	作る場所: <PlayerPicker bind:selected={playerId} bind:player />
+	/ <input bind:value={folder} list="projects" size="20" placeholder="フォルダ名（空なら日時）" disabled={pipeline.running} />
+	<datalist id="projects">
+		{#each projects as p}<option value={p.name}></option>{/each}
+	</datalist>
+	{#if existing}
+		<small>既存のフォルダ（{existing.files} ファイル）を改修します</small>
+	{:else if folder.trim()}
+		<small>新しく作ります</small>
+	{/if}
+</p>
+
 <form onsubmit={generate}>
-	<textarea bind:value={want} rows="4" cols="60" placeholder="作りたいもの（例: TODOアプリ）"></textarea>
+	<textarea
+		bind:value={want}
+		rows="4"
+		cols="60"
+		placeholder={existing ? 'やりたい変更（例: 完了したものを消すボタンを足す）' : '作りたいもの（例: TODOアプリ）'}
+	></textarea>
 	<div>
 		<button type="submit" disabled={loading || !want.trim()}>
 			{loading ? 'プラン作成中…' : 'プランを作る'}
@@ -110,10 +142,6 @@
 		{/each}
 	</ol>
 	<button onclick={() => steps.push({ title: '新しいステップ', description: '' })} disabled={pipeline.running}>ステップを追加</button>
-	<p>
-		作る場所: <PlayerPicker bind:selected={playerId} bind:player />
-		/ <input bind:value={folder} size="20" placeholder="フォルダ名（空なら日時）" disabled={pipeline.running} />
-	</p>
 	<button onclick={() => run()} disabled={pipeline.running || !playerId}>{pipeline.running ? '実装中…' : 'このプランで実装する'}</button>
 {/if}
 
