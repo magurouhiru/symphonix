@@ -1,18 +1,27 @@
 <script lang="ts">
-	import { taskLabels, tasks, type Persona, type Task } from '#lib/personas.js';
+	import { MAX_REVISIONS, taskLabels, tasks, type Persona, type Review, type Task } from '#lib/personas.js';
 	import type { PlanStep } from '#lib/plan.js';
 
 	// 作業ごとの担当ペルソナ（表示用）
 	let staff = $state<{ task: Task; name: string; model: string }[]>([]);
+	let reviewerNames = $state<string[]>([]);
 	$effect(() => {
 		fetch('/api/personas')
 			.then((r) => r.json())
-			.then((data: { personas: Persona[]; assignments: Record<Task, string>; defaultModel: string }) => {
-				staff = tasks.map((task) => {
-					const p = data.personas.find((x) => x.id === data.assignments[task]);
-					return { task, name: p?.name ?? '?', model: p?.model || data.defaultModel };
-				});
-			})
+			.then(
+				(data: {
+					personas: Persona[];
+					assignments: Record<Task, string>;
+					reviewers: string[];
+					defaultModel: string;
+				}) => {
+					staff = tasks.map((task) => {
+						const p = data.personas.find((x) => x.id === data.assignments[task]);
+						return { task, name: p?.name ?? '?', model: p?.model || data.defaultModel };
+					});
+					reviewerNames = data.reviewers.map((id) => data.personas.find((x) => x.id === id)?.name ?? '?');
+				}
+			)
 			.catch(() => {});
 	});
 
@@ -21,40 +30,97 @@
 	let error = $state('');
 	let loading = $state(false);
 
-	type StepResult = { status: 'pending' | 'running' | 'done' | 'error'; files: { path: string; content: string }[]; error?: string };
+	type GeneratedFile = { path: string; content: string };
+	type StepStatus = 'pending' | 'running' | 'reviewing' | 'revising' | 'done' | 'rejected' | 'error';
+	// rounds はレビュー 1 回ごとの結果。files はこのステップで書いたファイル（最新の内容）
+	type StepResult = { status: StepStatus; files: GeneratedFile[]; rounds: Review[][]; error?: string };
 	let project = $state('');
 	let projectPath = $state('');
 	let results = $state<StepResult[]>([]);
 	let running = $state(false);
 
-	// 承認したプランを 1 ステップずつ順番に実装する。失敗したらそこで止める
-	async function run() {
+	async function post(url: string, body: unknown) {
+		const res = await fetch(url, {
+			method: 'POST',
+			headers: { 'Content-Type': 'application/json' },
+			body: JSON.stringify(body)
+		});
+		const data = await res.json();
+		if (data.project) project = data.project;
+		if (!res.ok) throw new Error(data.error);
+		return data;
+	}
+
+	// 1 ステップを実装し、レビュアー全員が承認するまで指摘を渡して直させる。
+	// 直す回数の上限を超えたら rejected で止めて、人に判断してもらう
+	async function runStep(i: number): Promise<boolean> {
+		const result = results[i];
+		let feedback = '';
+		for (let attempt = 0; attempt <= MAX_REVISIONS; attempt++) {
+			result.status = attempt === 0 ? 'running' : 'revising';
+			const data = await post('/api/run', { request: want, steps, index: i, project, feedback });
+			projectPath = data.dir;
+			const byPath = new Map(result.files.map((f) => [f.path, f]));
+			for (const f of data.files as GeneratedFile[]) byPath.set(f.path, f);
+			result.files = [...byPath.values()];
+			if (reviewerNames.length === 0) break;
+
+			result.status = 'reviewing';
+			const { reviews } = (await post('/api/review', {
+				request: want,
+				steps,
+				index: i,
+				project,
+				paths: result.files.map((f) => f.path)
+			})) as { reviews: Review[] };
+			result.rounds.push(reviews);
+			const rejected = reviews.filter((r) => !r.approved);
+			if (rejected.length === 0) break;
+			if (attempt === MAX_REVISIONS) {
+				result.status = 'rejected';
+				return false;
+			}
+			feedback = rejected.map((r) => `- ${r.name}: ${r.comment}`).join('\n');
+		}
+		result.status = 'done';
+		return true;
+	}
+
+	// 承認したプランを 1 ステップずつ順番に実装する。失敗や差し戻しがあればそこで止める
+	async function run(from = 0) {
 		running = true;
-		project = '';
-		projectPath = '';
-		results = steps.map(() => ({ status: 'pending', files: [] }));
-		for (let i = 0; i < steps.length; i++) {
-			results[i].status = 'running';
+		if (from === 0) {
+			project = '';
+			projectPath = '';
+			results = steps.map(() => ({ status: 'pending', files: [], rounds: [] }));
+		}
+		for (let i = from; i < steps.length; i++) {
 			try {
-				const res = await fetch('/api/run', {
-					method: 'POST',
-					headers: { 'Content-Type': 'application/json' },
-					body: JSON.stringify({ request: want, steps, index: i, project })
-				});
-				const data = await res.json();
-				project = data.project;
-				if (!res.ok) throw new Error(data.error);
-				projectPath = data.dir;
-				results[i] = { status: 'done', files: data.files };
+				if (!(await runStep(i))) break;
 			} catch (e) {
-				results[i] = { status: 'error', files: [], error: e instanceof Error ? e.message : String(e) };
+				results[i].status = 'error';
+				results[i].error = e instanceof Error ? e.message : String(e);
 				break;
 			}
 		}
 		running = false;
 	}
 
-	const statusLabel = { pending: '待機中', running: '実装中…', done: '完了', error: '失敗' };
+	// 差し戻されたステップを人が承認して、次のステップから続ける
+	function approveAnyway(i: number) {
+		results[i].status = 'done';
+		run(i + 1);
+	}
+
+	const statusLabel: Record<StepStatus, string> = {
+		pending: '待機中',
+		running: '実装中…',
+		reviewing: 'レビュー中…',
+		revising: '指摘を直しています…',
+		done: '完了',
+		rejected: `${MAX_REVISIONS} 回直しても承認されませんでした`,
+		error: '失敗'
+	};
 
 	async function generate(event: SubmitEvent) {
 		event.preventDefault();
@@ -89,7 +155,9 @@
 {#if staff.length}
 	<p>
 		担当:
-		{#each staff as s, i}{i ? '、' : ''}{taskLabels[s.task]}は{s.name}（{s.model}）{/each}
+		{#each staff as s, i}{i ? '、' : ''}{taskLabels[s.task]}は{s.name}（{s.model}）{/each}、レビューは{reviewerNames.length
+			? reviewerNames.join('と')
+			: 'なし'}
 		<a href="/personas">変更</a>
 	</p>
 {/if}
@@ -121,14 +189,14 @@
 		{/each}
 	</ol>
 	<button onclick={() => steps.push({ title: '新しいステップ', description: '' })} disabled={running}>ステップを追加</button>
-	<button onclick={run} disabled={running}>{running ? '実装中…' : 'このプランで実装する'}</button>
+	<button onclick={() => run()} disabled={running}>{running ? '実装中…' : 'このプランで実装する'}</button>
 {/if}
 
 {#if results.length}
 	<h2>実装結果</h2>
 	{#if projectPath}
 		<p>書き出し先: <code>{projectPath}</code></p>
-		{#if !running}
+		{#if !running && project}
 			<p><a href="/api/projects/{encodeURIComponent(project)}/download" download>ZIP でダウンロード</a></p>
 		{/if}
 	{/if}
@@ -138,6 +206,23 @@
 				{steps[i]?.title}: {statusLabel[result.status]}
 				{#if result.error}
 					<p style="color: red">{result.error}</p>
+				{/if}
+				{#each result.rounds as reviews, round}
+					<div class="reviews">
+						<small>レビュー {round + 1} 回目</small>
+						{#each reviews as review}
+							<details open={!review.approved}>
+								<summary>{review.approved ? '✅' : '❌'} {review.name}（{review.model}）</summary>
+								<pre class="comment">{review.comment}</pre>
+							</details>
+						{/each}
+					</div>
+				{/each}
+				{#if result.status === 'rejected' && !running}
+					<p>
+						<button onclick={() => approveAnyway(i)}>このまま承認して次へ進む</button>
+						<button onclick={() => Object.assign(results[i], { status: 'error', error: 'ここで止めました' })}>ここで止める</button>
+					</p>
 				{/if}
 				{#each result.files as file}
 					<details>
@@ -149,3 +234,12 @@
 		{/each}
 	</ol>
 {/if}
+
+<style>
+	.reviews {
+		margin: 4px 0 4px 1em;
+	}
+	.comment {
+		white-space: pre-wrap;
+	}
+</style>

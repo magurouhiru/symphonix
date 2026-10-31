@@ -7,7 +7,8 @@ import { roleModel } from './settings.js';
 
 const personasPath = path.resolve(process.env.PERSONAS_PATH ?? 'data/personas.json');
 
-type Store = { personas: Persona[]; assignments: Record<Task, string> };
+// reviewers は実装のあとにレビューするペルソナ（複数可、空ならレビューしない）
+type Store = { personas: Persona[]; assignments: Record<Task, string>; reviewers: string[] };
 
 // 初めて起動したときのペルソナ
 const initial: Store = {
@@ -25,9 +26,24 @@ const initial: Store = {
 			prompt:
 				'You are a careful full-stack engineer. You write simple, readable code with no unnecessary dependencies.',
 			model: ''
+		},
+		{
+			id: 'requirements-reviewer',
+			name: '要件チェック担当',
+			prompt:
+				'You are a product owner. You check that the code does what the current step asks for, and nothing is missing.',
+			model: ''
+		},
+		{
+			id: 'code-reviewer',
+			name: 'コードレビュー担当',
+			prompt:
+				'You are a senior engineer doing code review. You look for bugs, broken references between files, and code that will not run.',
+			model: ''
 		}
 	],
-	assignments: { plan: 'planner', code: 'engineer' }
+	assignments: { plan: 'planner', code: 'engineer' },
+	reviewers: ['requirements-reviewer', 'code-reviewer']
 };
 
 let cache: Store | null = null;
@@ -36,6 +52,13 @@ function load(): Store {
 	if (!cache) {
 		try {
 			cache = JSON.parse(readFileSync(personasPath, 'utf8'));
+			// レビュー機能より前に保存したファイルには、既定のレビュアーを足す
+			if (!Array.isArray(cache!.reviewers)) {
+				const extra = initial.personas.filter(
+					(p) => initial.reviewers.includes(p.id) && !cache!.personas.some((q) => q.id === p.id)
+				);
+				cache = { ...cache!, personas: [...cache!.personas, ...extra], reviewers: [...initial.reviewers] };
+			}
 		} catch {
 			cache = structuredClone(initial);
 		}
@@ -55,6 +78,25 @@ export function listPersonas(): Persona[] {
 
 export function assignments(): Record<Task, string> {
 	return load().assignments;
+}
+
+export function reviewerIds(): string[] {
+	return load().reviewers;
+}
+
+export function setReviewers(ids: string[]) {
+	const store = load();
+	const known = ids.filter((id, i) => ids.indexOf(id) === i && store.personas.some((p) => p.id === id));
+	save({ ...store, reviewers: known });
+}
+
+// レビューするペルソナと、実際に使うモデル
+export function reviewers(): (Persona & { resolvedModel: string })[] {
+	const store = load();
+	return store.reviewers
+		.map((id) => store.personas.find((p) => p.id === id))
+		.filter((p): p is Persona => !!p)
+		.map((p) => ({ ...p, resolvedModel: p.model || roleModel('chat') }));
 }
 
 function clean(input: Partial<Persona>): Omit<Persona, 'id'> {
@@ -82,7 +124,7 @@ export function updatePersona(id: string, input: Partial<Persona>): Persona {
 export function deletePersona(id: string) {
 	const store = load();
 	const used = tasks.filter((task) => store.assignments[task] === id);
-	if (used.length) throw new Error('作業に割り当て中のペルソナは削除できません');
+	if (used.length || store.reviewers.includes(id)) throw new Error('作業に割り当て中のペルソナは削除できません');
 	save({ ...store, personas: store.personas.filter((p) => p.id !== id) });
 }
 
