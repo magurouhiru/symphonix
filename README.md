@@ -9,8 +9,8 @@
 
 1. VS Code でこのリポジトリを開き、「Reopen in Container」を実行します。
    開発用コンテナ `symphonix-dev` と LocalAI のコンテナ `symphonix-localai` が一緒に起動し、`npm install` も自動で走ります。
-   初回は LocalAI がモデル（Gemma 4 E4B、Stable Diffusion 1.5、Whisper small、Supertonic 3）をダウンロードするので時間がかかります。
-   進み具合は http://localhost:8080 の LocalAI の画面か、`docker logs -f symphonix-localai` で確認できます。
+   LocalAI はすぐに起動し、必要なモデル（Gemma 4 E4B、Stable Diffusion 1.5、Whisper small、Supertonic 3）は symphonix が起動後に LocalAI にダウンロードさせます。
+   初回はダウンロードに時間がかかるので、進み具合は http://localhost:5173/status で確認してください。
 2. コンテナ内で開発サーバーを起動します。
    ```sh
    npm run dev
@@ -36,4 +36,4 @@ VRAM 8GB に収めるため、LocalAI は同時に 1 つのモデルしか読み
 | `WORKSPACE_DIR` | `./workspace` | 生成コードの書き出し先 |
 
 アプリ側の値は `.devcontainer/compose.yaml` の `app` の `environment` で変えられます。
-別のモデルを使うときは、同じファイルの `localai` の `command` に [LocalAI のモデルギャラリー](https://models.localai.io) の名前を追加してください。
+別のモデルを使うときは、`MODEL` などに [LocalAI のモデルギャラリー](https://models.localai.io) の名前を指定すれば、足りない分は自動でダウンロードされます。

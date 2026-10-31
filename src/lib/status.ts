@@ -1,5 +1,13 @@
 export type ServerState = 'ready' | 'starting' | 'down';
 
+export type DownloadStatus = {
+	progress: number;
+	downloaded?: string;
+	total?: string;
+	message?: string;
+	error?: string;
+};
+
 export type ModelStatus = {
 	id: string;
 	roles: string[];
@@ -7,6 +15,7 @@ export type ModelStatus = {
 	loaded: boolean;
 	backend?: string;
 	vramBytes?: number;
+	download?: DownloadStatus;
 };
 
 export type StatusReport = {

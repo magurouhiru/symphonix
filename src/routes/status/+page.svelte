@@ -23,6 +23,10 @@
 
 	const serverLabel = { ready: '🟢 稼働中', starting: '🟡 起動中', down: '🔴 停止・接続できない' };
 
+	let downloading = $derived(
+		report?.models.filter((m) => !m.installed && m.download && !m.download.error).map((m) => m.id) ?? []
+	);
+
 	function gb(bytes?: number) {
 		return bytes === undefined ? '-' : `${(bytes / 1024 ** 3).toFixed(1)} GB`;
 	}
@@ -41,6 +45,9 @@
 		{#if report.version}（LocalAI {report.version}）{/if}
 		{#if report.reason}<br /><small>{report.reason}</small>{/if}
 	</p>
+	{#if downloading.length}
+		<p>⬇️ モデルをダウンロード中です（{downloading.join(', ')}）。終わるまでその用途は使えません。</p>
+	{/if}
 
 	<table>
 		<thead>
@@ -51,7 +58,22 @@
 				<tr>
 					<td>{model.id}</td>
 					<td>{model.roles.join('・') || '-'}</td>
-					<td>{report.server === 'down' ? '?' : model.installed ? '✓' : '未'}</td>
+					<td>
+						{#if report.server === 'down'}
+							?
+						{:else if model.installed}
+							✓
+						{:else if model.download?.error}
+							<span style="color: red">失敗: {model.download.error}</span>
+						{:else if model.download}
+							ダウンロード中 {Math.round(model.download.progress)}%
+							{#if model.download.downloaded && model.download.total}
+								（{model.download.downloaded} / {model.download.total}）
+							{/if}
+						{:else}
+							未
+						{/if}
+					</td>
 					<td>{model.loaded ? `読み込み済み${model.backend ? `（${model.backend}）` : ''}` : '-'}</td>
 					<td>{gb(model.vramBytes)}</td>
 				</tr>
