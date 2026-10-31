@@ -37,14 +37,23 @@ export async function writeFiles(project: string, files: GeneratedFile[]): Promi
 	return written;
 }
 
+// 自動チェックで npm install やビルドをすると増えるフォルダ。モデルに見せたり ZIP に入れたりしない
+const IGNORED = new Set(['node_modules', '.git', 'dist']);
+
+// プロジェクト内のファイルを、プロジェクトからの相対パス（/ 区切り）で返す
+export async function projectFiles(dir: string): Promise<string[]> {
+	const entries = await readdir(dir, { recursive: true, withFileTypes: true }).catch(() => []);
+	return entries
+		.filter((entry) => entry.isFile())
+		.map((entry) => path.relative(dir, path.join(entry.parentPath, entry.name)).split(path.sep).join('/'))
+		.filter((rel) => !rel.split('/').some((part) => IGNORED.has(part)));
+}
+
 export async function readProject(project: string): Promise<GeneratedFile[]> {
 	const dir = projectDir(project);
-	const entries = await readdir(dir, { recursive: true, withFileTypes: true }).catch(() => []);
 	const files: GeneratedFile[] = [];
-	for (const entry of entries) {
-		if (!entry.isFile()) continue;
-		const full = path.join(entry.parentPath, entry.name);
-		files.push({ path: path.relative(dir, full), content: await readFile(full, 'utf8') });
+	for (const rel of await projectFiles(dir)) {
+		files.push({ path: rel, content: await readFile(path.join(dir, rel), 'utf8') });
 	}
 	return files;
 }
@@ -58,8 +67,8 @@ export async function listProjects(): Promise<ProjectSummary[]> {
 	for (const entry of entries) {
 		if (!entry.isDirectory()) continue;
 		const dir = path.join(root, entry.name);
-		const files = (await readdir(dir, { recursive: true, withFileTypes: true })).filter((f) => f.isFile());
-		const times = await Promise.all(files.map((f) => stat(path.join(f.parentPath, f.name))));
+		const files = await projectFiles(dir);
+		const times = await Promise.all(files.map((rel) => stat(path.join(dir, rel))));
 		const updated = Math.max((await stat(dir)).mtimeMs, ...times.map((t) => t.mtimeMs));
 		projects.push({ name: entry.name, files: files.length, updatedAt: new Date(updated).toISOString() });
 	}
@@ -69,12 +78,10 @@ export async function listProjects(): Promise<ProjectSummary[]> {
 // ZIP にするため、プロジェクトのファイルをバイト列のまま読む
 export async function readProjectBytes(project: string): Promise<Record<string, Uint8Array>> {
 	const dir = projectDir(project);
-	const entries = await readdir(dir, { recursive: true, withFileTypes: true });
+	await stat(dir);
 	const files: Record<string, Uint8Array> = {};
-	for (const entry of entries) {
-		if (!entry.isFile()) continue;
-		const full = path.join(entry.parentPath, entry.name);
-		files[path.relative(dir, full).split(path.sep).join('/')] = await readFile(full);
+	for (const rel of await projectFiles(dir)) {
+		files[rel] = await readFile(path.join(dir, rel));
 	}
 	return files;
 }

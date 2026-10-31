@@ -23,7 +23,8 @@ vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
 
 # Generated code (not committed)
-/workspace
+/workspace/*
+!/workspace/.gitkeep
 
 # Model settings changed from the UI
 /data

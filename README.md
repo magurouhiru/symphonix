@@ -20,6 +20,8 @@
    実装が終わると「ZIP でダウンロード」のリンクが出ます。これまでに作ったものは http://localhost:5173/projects からまとめてダウンロードできます。
    - プラン作成と実装をどのペルソナ（人物像とモデル）に任せるかは http://localhost:5173/personas で決められます。ペルソナにモデルを指定しなければ「文章」のモデルを使います
    - 同じ画面でレビュアーを何人でも選べます。ステップを実装するたびに全員がレビューし、全員が承認したら次のステップへ進みます。指摘があれば直させ、2 回直しても承認されなければ止まるので、そのまま進めるか止めるかを選んでください
+   - レビューの前に自動チェックが走ります。JSON が壊れていないか、HTML から読み込むファイルがあるか、JavaScript と Python の構文、package.json があれば `npm install`（install スクリプトは実行しない）と `npm run build` と `npm test` です。失敗したらエラーを渡して直させます
+   - コードを動かすチェックは `runner` コンテナで実行します。runner からは `workspace/` しか見えないので、生成したコードが symphonix 本体を壊すことはありません
    - モデルとの接続だけを確かめたいときは http://localhost:5173/chat
    - 画像生成は http://localhost:5173/image
    - 音声で話しかけるのは http://localhost:5173/voice（録音 → 文字起こし → 返事 → 読み上げ）
@@ -37,6 +39,7 @@ VRAM 8GB に収めるため、LocalAI は同時に 1 つのモデルしか読み
 | `IMAGE_MODEL` | `sd-1.5-ggml` | 画像生成に使うモデル |
 | `STT_MODEL` | `whisper-small` | 文字起こしに使うモデル |
 | `TTS_MODEL` | `supertonic-3` | 読み上げに使うモデル |
+| `RUNNER_URL` | `http://runner:7070` | 生成したコードのビルドやテストを実行する runner |
 | `PERSONAS_PATH` | `data/personas.json` | ペルソナと担当の保存先 |
 | `SETTINGS_PATH` | `./data/settings.json` | 画面で選んだモデルの保存先 |
 | `WORKSPACE_DIR` | `./workspace` | 生成コードの書き出し先 |

@@ -13,6 +13,19 @@ services:
       IMAGE_MODEL: sd-1.5-ggml
       STT_MODEL: whisper-small
       TTS_MODEL: supertonic-3
+      RUNNER_URL: http://runner:7070
+
+  # 生成したコードのビルドやテストを実行する。workspace/ しか見えないようにしておく
+  runner:
+    image: mcr.microsoft.com/devcontainers/typescript-node:22
+    container_name: symphonix-runner
+    user: node
+    command: node /runner/server.mjs
+    volumes:
+      - ../workspace:/workspace
+      - ../runner:/runner:ro
+    mem_limit: 2g
+    cpus: 2
 
   # 文章と画像の生成をまとめて受け持つ OpenAI 互換サーバー
   localai:

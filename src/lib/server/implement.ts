@@ -35,7 +35,7 @@ export async function implementStep(
 		{
 			role: 'user' as const,
 			content: `What to build:\n${request}\n\nPlan:\n${plan}\n\nFiles so far:\n${filesText}\n\nCurrent step (${index + 1}): ${step.title}\n${step.description}${
-				feedback ? `\n\nReviewers asked for these changes to your work on this step. Fix them:\n${feedback}` : ''
+				feedback ? `\n\nAutomated checks and reviewers found these problems in your work on this step. Fix them:\n${feedback}` : ''
 			}`
 		}
 	];

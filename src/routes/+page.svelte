@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { MAX_REVISIONS, taskLabels, tasks, type Persona, type Review, type Task } from '#lib/personas.js';
+	import type { CheckResult } from '#lib/checks.js';
 	import type { PlanStep } from '#lib/plan.js';
 
 	// 作業ごとの担当ペルソナ（表示用）
@@ -31,9 +32,10 @@
 	let loading = $state(false);
 
 	type GeneratedFile = { path: string; content: string };
-	type StepStatus = 'pending' | 'running' | 'reviewing' | 'revising' | 'done' | 'rejected' | 'error';
-	// rounds はレビュー 1 回ごとの結果。files はこのステップで書いたファイル（最新の内容）
-	type StepResult = { status: StepStatus; files: GeneratedFile[]; rounds: Review[][]; error?: string };
+	type StepStatus = 'pending' | 'running' | 'checking' | 'reviewing' | 'revising' | 'done' | 'rejected' | 'error';
+	// rounds は実装 1 回ごとの自動チェックとレビューの結果。files はこのステップで書いたファイル（最新の内容）
+	type Round = { checks: CheckResult[]; reviews: Review[] };
+	type StepResult = { status: StepStatus; files: GeneratedFile[]; rounds: Round[]; error?: string };
 	let project = $state('');
 	let projectPath = $state('');
 	let results = $state<StepResult[]>([]);
@@ -51,7 +53,7 @@
 		return data;
 	}
 
-	// 1 ステップを実装し、レビュアー全員が承認するまで指摘を渡して直させる。
+	// 1 ステップを実装し、自動チェックが通ってレビュアー全員が承認するまで、エラーや指摘を渡して直させる。
 	// 直す回数の上限を超えたら rejected で止めて、人に判断してもらう
 	async function runStep(i: number): Promise<boolean> {
 		const result = results[i];
@@ -63,24 +65,35 @@
 			const byPath = new Map(result.files.map((f) => [f.path, f]));
 			for (const f of data.files as GeneratedFile[]) byPath.set(f.path, f);
 			result.files = [...byPath.values()];
-			if (reviewerNames.length === 0) break;
 
-			result.status = 'reviewing';
-			const { reviews } = (await post('/api/review', {
-				request: want,
-				steps,
-				index: i,
-				project,
-				paths: result.files.map((f) => f.path)
-			})) as { reviews: Review[] };
-			result.rounds.push(reviews);
-			const rejected = reviews.filter((r) => !r.approved);
-			if (rejected.length === 0) break;
+			result.status = 'checking';
+			const { checks } = (await post('/api/check', { project })) as { checks: CheckResult[] };
+			const round: Round = { checks, reviews: [] };
+			result.rounds.push(round);
+			const failed = checks.filter((c) => !c.ok);
+			if (failed.length === 0 && reviewerNames.length > 0) {
+				// 自動チェックで落ちたものはレビューせずに直させる
+				result.status = 'reviewing';
+				const { reviews } = (await post('/api/review', {
+					request: want,
+					steps,
+					index: i,
+					project,
+					paths: result.files.map((f) => f.path)
+				})) as { reviews: Review[] };
+				round.reviews = reviews;
+				result.rounds[result.rounds.length - 1] = round;
+			}
+			const rejected = round.reviews.filter((r) => !r.approved);
+			if (failed.length === 0 && rejected.length === 0) break;
 			if (attempt === MAX_REVISIONS) {
 				result.status = 'rejected';
 				return false;
 			}
-			feedback = rejected.map((r) => `- ${r.name}: ${r.comment}`).join('\n');
+			feedback = [
+				...failed.map((c) => `- 自動チェック「${c.name}」が失敗しました:\n${c.output}`),
+				...rejected.map((r) => `- ${r.name}: ${r.comment}`)
+			].join('\n');
 		}
 		result.status = 'done';
 		return true;
@@ -115,10 +128,11 @@
 	const statusLabel: Record<StepStatus, string> = {
 		pending: '待機中',
 		running: '実装中…',
+		checking: '自動チェック中…',
 		reviewing: 'レビュー中…',
 		revising: '指摘を直しています…',
 		done: '完了',
-		rejected: `${MAX_REVISIONS} 回直しても承認されませんでした`,
+		rejected: `${MAX_REVISIONS} 回直しても通りませんでした`,
 		error: '失敗'
 	};
 
@@ -207,10 +221,16 @@
 				{#if result.error}
 					<p style="color: red">{result.error}</p>
 				{/if}
-				{#each result.rounds as reviews, round}
+				{#each result.rounds as round, n}
 					<div class="reviews">
-						<small>レビュー {round + 1} 回目</small>
-						{#each reviews as review}
+						<small>{n + 1} 回目</small>
+						{#each round.checks as check}
+							<details open={!check.ok}>
+								<summary>{check.skipped ? '⏭️' : check.ok ? '✅' : '❌'} 自動チェック: {check.name}</summary>
+								{#if check.output}<pre class="comment">{check.output}</pre>{/if}
+							</details>
+						{/each}
+						{#each round.reviews as review}
 							<details open={!review.approved}>
 								<summary>{review.approved ? '✅' : '❌'} {review.name}（{review.model}）</summary>
 								<pre class="comment">{review.comment}</pre>
