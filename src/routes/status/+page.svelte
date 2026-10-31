@@ -1,0 +1,80 @@
+<script lang="ts">
+	import type { StatusReport } from '#lib/status.js';
+
+	let report = $state<StatusReport | null>(null);
+	let error = $state('');
+
+	async function refresh() {
+		try {
+			const res = await fetch('/api/status');
+			report = await res.json();
+			error = '';
+		} catch (e) {
+			error = String(e);
+		}
+	}
+
+	// 5 秒ごとに更新する
+	$effect(() => {
+		refresh();
+		const timer = setInterval(refresh, 5000);
+		return () => clearInterval(timer);
+	});
+
+	const serverLabel = { ready: '🟢 稼働中', starting: '🟡 起動中', down: '🔴 停止・接続できない' };
+
+	function gb(bytes?: number) {
+		return bytes === undefined ? '-' : `${(bytes / 1024 ** 3).toFixed(1)} GB`;
+	}
+</script>
+
+<h1>symphonix</h1>
+<p><a href="/">プラン作成に戻る</a> | LocalAI の状態</p>
+
+{#if error}
+	<p style="color: red">{error}</p>
+{/if}
+
+{#if report}
+	<p>
+		サーバー: <strong>{serverLabel[report.server]}</strong>
+		{#if report.version}（LocalAI {report.version}）{/if}
+		{#if report.reason}<br /><small>{report.reason}</small>{/if}
+	</p>
+
+	<table>
+		<thead>
+			<tr><th>モデル</th><th>用途</th><th>インストール</th><th>メモリ上</th><th>VRAM</th></tr>
+		</thead>
+		<tbody>
+			{#each report.models as model (model.id)}
+				<tr>
+					<td>{model.id}</td>
+					<td>{model.roles.join('・') || '-'}</td>
+					<td>{report.server === 'down' ? '?' : model.installed ? '✓' : '未'}</td>
+					<td>{model.loaded ? `読み込み済み${model.backend ? `（${model.backend}）` : ''}` : '-'}</td>
+					<td>{gb(model.vramBytes)}</td>
+				</tr>
+			{/each}
+		</tbody>
+	</table>
+
+	{#if report.backends.length}
+		<p><small>使えるバックエンド: {report.backends.join(', ')}</small></p>
+	{/if}
+	<p><small>最終確認: {new Date(report.checkedAt).toLocaleTimeString()}（5 秒ごとに更新）</small></p>
+{:else}
+	<p>確認中…</p>
+{/if}
+
+<style>
+	table {
+		border-collapse: collapse;
+	}
+	th,
+	td {
+		border: 1px solid #ccc;
+		padding: 4px 8px;
+		text-align: left;
+	}
+</style>
