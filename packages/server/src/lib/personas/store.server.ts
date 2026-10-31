@@ -1,11 +1,8 @@
 // ペルソナの一覧と、作業ごとにどのペルソナを割り当てるかを JSON ファイルに保存する
 import { randomUUID } from 'node:crypto';
-import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
-import path from 'node:path';
-import { tasks, type Persona, type Task } from '../personas.js';
-import { roleModel } from './settings.js';
-
-const personasPath = path.resolve(process.env.PERSONAS_PATH ?? 'data/personas.json');
+import { tasks, type Persona, type Task } from './types.js';
+import { roleModel } from '#lib/ai/model-settings.server.js';
+import { jsonStore } from '#lib/shared/json-store.server.js';
 
 // reviewers は実装のあとにレビューするペルソナ（複数可、空ならレビューしない）
 type Store = { personas: Persona[]; assignments: Record<Task, string>; reviewers: string[] };
@@ -46,31 +43,19 @@ const initial: Store = {
 	reviewers: ['requirements-reviewer', 'code-reviewer']
 };
 
-let cache: Store | null = null;
-
-function load(): Store {
-	if (!cache) {
-		try {
-			cache = JSON.parse(readFileSync(personasPath, 'utf8'));
-			// レビュー機能より前に保存したファイルには、既定のレビュアーを足す
-			if (!Array.isArray(cache!.reviewers)) {
-				const extra = initial.personas.filter(
-					(p) => initial.reviewers.includes(p.id) && !cache!.personas.some((q) => q.id === p.id)
-				);
-				cache = { ...cache!, personas: [...cache!.personas, ...extra], reviewers: [...initial.reviewers] };
-			}
-		} catch {
-			cache = structuredClone(initial);
-		}
+const file = jsonStore<Store>(process.env.PERSONAS_PATH ?? 'data/personas.json', {
+	initial: () => structuredClone(initial),
+	// レビュー機能より前に保存したファイルには、既定のレビュアーを足す
+	migrate: (data) => {
+		if (Array.isArray(data.reviewers)) return data;
+		const extra = initial.personas.filter(
+			(p) => initial.reviewers.includes(p.id) && !data.personas.some((q) => q.id === p.id)
+		);
+		return { ...data, personas: [...data.personas, ...extra], reviewers: [...initial.reviewers] };
 	}
-	return cache!;
-}
-
-function save(store: Store) {
-	cache = store;
-	mkdirSync(path.dirname(personasPath), { recursive: true });
-	writeFileSync(personasPath, JSON.stringify(store, null, '\t') + '\n');
-}
+});
+const load = file.get;
+const save = file.set;
 
 export function listPersonas(): Persona[] {
 	return load().personas;

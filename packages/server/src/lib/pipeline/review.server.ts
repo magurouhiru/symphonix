@@ -1,9 +1,8 @@
 // 実装したステップを、割り当てたレビュアーが 1 人ずつ確認する
-import { chat } from './model.js';
-import { reviewers, withPersona } from './personas.js';
-import { readProject, type Target } from './workspace.js';
-import type { Review } from '../personas.js';
-import type { PlanStep } from '../plan.js';
+import { chat } from '#lib/ai/chat.server.js';
+import { reviewers, withPersona } from '#lib/personas/store.server.js';
+import { readProject, type Target } from '#lib/players/workspace.server.js';
+import type { PlanStep, Review } from './types.js';
 
 const SYSTEM_PROMPT = `You are reviewing one step of a plan that another developer just implemented.
 You are given what the user wants to build, the whole plan, the current step, and the files the developer wrote in this step.

@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { taskLabels, tasks, type Persona, type Task } from '#lib/personas.js';
+	import { taskLabels, tasks, type Persona, type Task } from '#lib/personas/types.js';
 
 	let personas = $state<Persona[]>([]);
 	let assigned = $state<Record<Task, string> | null>(null);
@@ -55,12 +55,6 @@
 		load().catch((e) => (error = String(e)));
 	});
 </script>
-
-<h1>symphonix</h1>
-<p>
-	<a href="/">プラン作成に戻る</a> | <a href="/projects">成果物</a> | ペルソナ |
-	<a href="/status">LocalAI の状態</a> | <a href="/settings">使うモデル</a>
-</p>
 
 <p>
 	作業ごとに担当する AI のペルソナを決められます。人物像はモデルへの指示の先頭に付きます。

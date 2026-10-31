@@ -1,8 +1,9 @@
 // 実装したプロジェクトを自動でチェックする。ファイルの読み込みもコマンドの実行も、
 // プロジェクトがあるプレイヤーに頼んで行う
 import path from 'node:path';
-import type { CheckResult } from '../checks.js';
-import { projectFiles, readText, runInProject, type Target } from './workspace.js';
+import type { CheckResult } from './types.js';
+import { projectFiles, readText, runInProject, type Target } from '#lib/players/workspace.server.js';
+import { errorMessage } from '#lib/shared/errors.js';
 
 type RunResult = { code: number; output: string; timedOut: boolean };
 
@@ -12,7 +13,7 @@ async function run(target: Target, name: string, command: string[], timeoutMs: n
 	try {
 		r = await runInProject(target, command, timeoutMs);
 	} catch (e) {
-		const message = e instanceof Error ? e.message : String(e);
+		const message = errorMessage(e);
 		if (/許可していないコマンド/.test(message)) {
 			return { name, ok: true, skipped: true, output: `${message}（プレイヤーの --allow で許可できます）` };
 		}

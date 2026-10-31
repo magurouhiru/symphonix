@@ -1,6 +1,6 @@
 // LocalAI の OpenAI 互換 API で文字起こしと読み上げをする（文章・画像と同じサーバー）
 const baseUrl = process.env.AI_BASE_URL ?? 'http://localai:8080/v1';
-import { roleModel } from './settings.js';
+import { roleModel } from './model-settings.server.js';
 
 
 export async function transcribe(audio: Blob, filename: string): Promise<string> {

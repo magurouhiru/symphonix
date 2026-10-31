@@ -1,7 +1,8 @@
 import { json } from '@sveltejs/kit';
-import { tasks, type Task } from '#lib/personas.js';
-import { assign } from '#lib/server/personas.js';
+import { tasks, type Task } from '#lib/personas/types.js';
+import { assign } from '#lib/personas/store.server.js';
 import type { RequestHandler } from './$types';
+import { errorMessage } from '#lib/shared/errors.js';
 
 // { task, persona } で作業の担当ペルソナを変える
 export const PUT: RequestHandler = async ({ request }) => {
@@ -13,6 +14,6 @@ export const PUT: RequestHandler = async ({ request }) => {
 		assign(task as Task, persona);
 		return json({ ok: true });
 	} catch (e) {
-		return json({ error: e instanceof Error ? e.message : String(e) }, { status: 400 });
+		return json({ error: errorMessage(e) }, { status: 400 });
 	}
 };

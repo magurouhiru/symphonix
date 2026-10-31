@@ -1,5 +1,5 @@
 <script lang="ts">
-	import PlayerPicker from '#lib/PlayerPicker.svelte';
+	import PlayerPicker from '#lib/players/PlayerPicker.svelte';
 
 	type ProjectSummary = { name: string; files: number; updatedAt: string };
 
@@ -20,9 +20,6 @@
 			.catch((e) => (error = String(e)));
 	});
 </script>
-
-<h1>symphonix</h1>
-<p><a href="/">プラン作成に戻る</a> | 成果物 | <a href="/personas">ペルソナ</a> | <a href="/status">LocalAI の状態</a> | <a href="/settings">使うモデル</a></p>
 
 <p>プレイヤーの作業フォルダにあるものを ZIP でダウンロードできます。</p>
 <p>プレイヤー: <PlayerPicker bind:selected={playerId} /></p>

@@ -1,7 +1,7 @@
-import { chat } from './model.js';
-import { personaFor, withPersona } from './personas.js';
-import { readProject, writeFiles, type GeneratedFile, type Target } from './workspace.js';
-import type { PlanStep } from '../plan.js';
+import { chat } from '#lib/ai/chat.server.js';
+import { personaFor, withPersona } from '#lib/personas/store.server.js';
+import { readProject, writeFiles, type GeneratedFile, type Target } from '#lib/players/workspace.server.js';
+import type { PlanStep } from './types.js';
 
 // コードを JSON に入れると引用符や改行のエスケープを間違えやすいので、ファイルは区切り行で囲んで返させる
 const SYSTEM_PROMPT = `You are a software developer implementing a plan one step at a time.

@@ -1,5 +1,5 @@
 // リクエストの { player, project } を読む。どちらも無ければ null
-import type { Target } from './workspace.js';
+import type { Target } from './workspace.server.js';
 
 export function targetFrom(body: { player?: unknown; project?: unknown }): Target | null {
 	if (typeof body.player !== 'string' || !body.player) return null;

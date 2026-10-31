@@ -1,6 +1,6 @@
 // LocalAI の OpenAI 互換 API で画像を生成する（文章と同じサーバー）
 const baseUrl = process.env.AI_BASE_URL ?? 'http://localai:8080/v1';
-import { roleModel } from './settings.js';
+import { roleModel } from './model-settings.server.js';
 
 
 export async function generateImage(prompt: string, size = '512x512'): Promise<string> {

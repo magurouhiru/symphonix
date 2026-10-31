@@ -1,7 +1,8 @@
 import { json } from '@sveltejs/kit';
-import { reviewStep } from '#lib/server/review.js';
-import { targetFrom } from '#lib/server/target.js';
+import { reviewStep } from '#lib/pipeline/review.server.js';
+import { targetFrom } from '#lib/players/target.server.js';
 import type { RequestHandler } from './$types';
+import { errorMessage } from '#lib/shared/errors.js';
 
 // 実装したステップをレビュアー全員に確認してもらう。paths はそのステップで書いたファイル
 export const POST: RequestHandler = async ({ request }) => {
@@ -21,6 +22,6 @@ export const POST: RequestHandler = async ({ request }) => {
 	try {
 		return json({ reviews: await reviewStep(target, want, steps, index, paths) });
 	} catch (e) {
-		return json({ error: e instanceof Error ? e.message : String(e) }, { status: 502 });
+		return json({ error: errorMessage(e) }, { status: 502 });
 	}
 };

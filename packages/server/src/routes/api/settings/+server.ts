@@ -1,6 +1,6 @@
 import { json } from '@sveltejs/kit';
-import { roles, type Role } from '#lib/roles.js';
-import { defaultModel, roleModels, setRoleModel } from '#lib/server/settings.js';
+import { roles, type Role } from '#lib/ai/models.js';
+import { defaultModel, roleModels, setRoleModel } from '#lib/ai/model-settings.server.js';
 import type { RequestHandler } from './$types';
 
 // 用途ごとに今使っているモデルと既定のモデルを返す

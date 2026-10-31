@@ -1,7 +1,7 @@
 // 生成したプロジェクトの読み書き。ファイルは symphonix ではなくプレイヤーの作業フォルダにあり、
 // すべてプレイヤーに頼んで行う。project は作業フォルダの中のフォルダ名
 import path from 'node:path';
-import { callPlayer } from './players.js';
+import { callPlayer } from './registry.server.js';
 
 export type GeneratedFile = { path: string; content: string };
 export type Target = { player: string; project: string };

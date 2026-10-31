@@ -27,9 +27,6 @@
 	}
 </script>
 
-<h1>symphonix</h1>
-<p><a href="/">プラン作成に戻る</a> | 画像生成の確認</p>
-
 <form onsubmit={send}>
 	<textarea bind:value={prompt} rows="3" cols="60" placeholder="生成したい画像（英語のほうが通りやすいです）"></textarea>
 	<div>

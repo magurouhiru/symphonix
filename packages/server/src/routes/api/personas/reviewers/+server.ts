@@ -1,5 +1,5 @@
 import { json } from '@sveltejs/kit';
-import { setReviewers } from '#lib/server/personas.js';
+import { setReviewers } from '#lib/personas/store.server.js';
 import type { RequestHandler } from './$types';
 
 // { reviewers: [ペルソナの id, ...] } でレビュアーを決める。空ならレビューしない

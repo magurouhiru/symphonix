@@ -1,6 +1,6 @@
 // LocalAI の OpenAI 互換 API を呼び出す
 const baseUrl = process.env.AI_BASE_URL ?? 'http://localai:8080/v1';
-import { roleModel } from './settings.js';
+import { roleModel } from './model-settings.server.js';
 
 export type ChatMessage = { role: 'system' | 'user' | 'assistant'; content: string };
 

@@ -1,6 +1,7 @@
 import { json } from '@sveltejs/kit';
-import { audioModelInfo, speak } from '#lib/server/audio.js';
+import { audioModelInfo, speak } from '#lib/ai/audio.server.js';
 import type { RequestHandler } from './$types';
+import { errorMessage } from '#lib/shared/errors.js';
 
 // テキストを読み上げた音声をそのまま返す
 export const POST: RequestHandler = async ({ request }) => {
@@ -14,6 +15,6 @@ export const POST: RequestHandler = async ({ request }) => {
 			headers: { 'Content-Type': res.headers.get('Content-Type') ?? 'audio/wav' }
 		});
 	} catch (e) {
-		return json({ error: e instanceof Error ? e.message : String(e), ...audioModelInfo }, { status: 502 });
+		return json({ error: errorMessage(e), ...audioModelInfo }, { status: 502 });
 	}
 };

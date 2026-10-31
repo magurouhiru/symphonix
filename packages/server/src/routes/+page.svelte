@@ -1,9 +1,11 @@
 <script lang="ts">
-	import { MAX_REVISIONS, taskLabels, tasks, type Persona, type Review, type Task } from '#lib/personas.js';
-	import PlayerPicker from '#lib/PlayerPicker.svelte';
-	import type { CheckResult } from '#lib/checks.js';
+	import { taskLabels, tasks, type Persona, type Task } from '#lib/personas/types.js';
+	import { PipelineRun, statusLabel } from '#lib/pipeline/runner.svelte.js';
+	import type { PlanStep } from '#lib/pipeline/types.js';
+	import PlayerPicker from '#lib/players/PlayerPicker.svelte';
+	import { postJson } from '#lib/shared/api.js';
+	import { errorMessage } from '#lib/shared/errors.js';
 	import type { PlayerInfo } from '@symphonix/protocol';
-	import type { PlanStep } from '#lib/plan.js';
 
 	// 作業ごとの担当ペルソナ（表示用）
 	let staff = $state<{ task: Task; name: string; model: string }[]>([]);
@@ -33,130 +35,32 @@
 	let error = $state('');
 	let loading = $state(false);
 
-	type GeneratedFile = { path: string; content: string };
-	type StepStatus = 'pending' | 'running' | 'checking' | 'reviewing' | 'revising' | 'done' | 'rejected' | 'error';
-	// rounds は実装 1 回ごとの自動チェックとレビューの結果。files はこのステップで書いたファイル（最新の内容）
-	type Round = { checks: CheckResult[]; reviews: Review[] };
-	type StepResult = { status: StepStatus; files: GeneratedFile[]; rounds: Round[]; error?: string };
 	// どのプレイヤーの作業フォルダの、どのフォルダに作るか
 	let playerId = $state('');
 	let player = $state<PlayerInfo>();
 	let folder = $state('');
-	let project = $state('');
-	let projectPath = $state('');
-	let results = $state<StepResult[]>([]);
-	let running = $state(false);
 
-	async function post(url: string, body: unknown) {
-		const res = await fetch(url, {
-			method: 'POST',
-			headers: { 'Content-Type': 'application/json' },
-			body: JSON.stringify(body)
+	const pipeline = new PipelineRun();
+
+	function run() {
+		pipeline.start({
+			request: want,
+			steps,
+			player: playerId,
+			playerRoot: player?.root ?? '',
+			folder,
+			hasReviewers: reviewerNames.length > 0
 		});
-		const data = await res.json();
-		if (!res.ok) throw new Error(data.error);
-		return data;
 	}
-
-	// 1 ステップを実装し、自動チェックが通ってレビュアー全員が承認するまで、エラーや指摘を渡して直させる。
-	// 直す回数の上限を超えたら rejected で止めて、人に判断してもらう
-	async function runStep(i: number): Promise<boolean> {
-		const result = results[i];
-		let feedback = '';
-		for (let attempt = 0; attempt <= MAX_REVISIONS; attempt++) {
-			result.status = attempt === 0 ? 'running' : 'revising';
-			const data = await post('/api/run', { request: want, steps, index: i, player: playerId, project, feedback });
-			const byPath = new Map(result.files.map((f) => [f.path, f]));
-			for (const f of data.files as GeneratedFile[]) byPath.set(f.path, f);
-			result.files = [...byPath.values()];
-
-			result.status = 'checking';
-			const { checks } = (await post('/api/check', { player: playerId, project })) as { checks: CheckResult[] };
-			const round: Round = { checks, reviews: [] };
-			result.rounds.push(round);
-			const failed = checks.filter((c) => !c.ok);
-			if (failed.length === 0 && reviewerNames.length > 0) {
-				// 自動チェックで落ちたものはレビューせずに直させる
-				result.status = 'reviewing';
-				const { reviews } = (await post('/api/review', {
-					request: want,
-					steps,
-					index: i,
-					player: playerId,
-					project,
-					paths: result.files.map((f) => f.path)
-				})) as { reviews: Review[] };
-				round.reviews = reviews;
-				result.rounds[result.rounds.length - 1] = round;
-			}
-			const rejected = round.reviews.filter((r) => !r.approved);
-			if (failed.length === 0 && rejected.length === 0) break;
-			if (attempt === MAX_REVISIONS) {
-				result.status = 'rejected';
-				return false;
-			}
-			feedback = [
-				...failed.map((c) => `- 自動チェック「${c.name}」が失敗しました:\n${c.output}`),
-				...rejected.map((r) => `- ${r.name}: ${r.comment}`)
-			].join('\n');
-		}
-		result.status = 'done';
-		return true;
-	}
-
-	// 承認したプランを 1 ステップずつ順番に実装する。失敗や差し戻しがあればそこで止める
-	async function run(from = 0) {
-		running = true;
-		if (from === 0) {
-			// フォルダ名を入れなければ日時にする
-			project = folder.trim() || new Date().toISOString().replace(/[-:]/g, '').replace('T', '-').slice(0, 15);
-			projectPath = `${player?.root ?? ''}/${project}`;
-			results = steps.map(() => ({ status: 'pending', files: [], rounds: [] }));
-		}
-		for (let i = from; i < steps.length; i++) {
-			try {
-				if (!(await runStep(i))) break;
-			} catch (e) {
-				results[i].status = 'error';
-				results[i].error = e instanceof Error ? e.message : String(e);
-				break;
-			}
-		}
-		running = false;
-	}
-
-	// 差し戻されたステップを人が承認して、次のステップから続ける
-	function approveAnyway(i: number) {
-		results[i].status = 'done';
-		run(i + 1);
-	}
-
-	const statusLabel: Record<StepStatus, string> = {
-		pending: '待機中',
-		running: '実装中…',
-		checking: '自動チェック中…',
-		reviewing: 'レビュー中…',
-		revising: '指摘を直しています…',
-		done: '完了',
-		rejected: `${MAX_REVISIONS} 回直しても通りませんでした`,
-		error: '失敗'
-	};
 
 	async function generate(event: SubmitEvent) {
 		event.preventDefault();
 		loading = true;
 		error = '';
 		try {
-			const res = await fetch('/api/plan', {
-				method: 'POST',
-				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify({ request: want })
-			});
-			const data = await res.json();
-			if (res.ok) steps = data.steps;
-			else error = data.error;
+			steps = (await postJson<{ steps: PlanStep[] }>('/api/plan', { request: want })).steps;
 		} catch (e) {
-			error = String(e);
+			error = errorMessage(e);
 		} finally {
 			loading = false;
 		}
@@ -168,9 +72,6 @@
 		[steps[i], steps[j]] = [steps[j], steps[i]];
 	}
 </script>
-
-<h1>symphonix</h1>
-<p><a href="/chat">モデル接続確認</a> | <a href="/image">画像生成の確認</a> | <a href="/voice">音声で話しかける</a> | <a href="/projects">成果物</a> | <a href="/personas">ペルソナ</a> | <a href="/status">LocalAI の状態</a> | <a href="/settings">使うモデル</a></p>
 
 {#if staff.length}
 	<p>
@@ -208,24 +109,24 @@
 			</li>
 		{/each}
 	</ol>
-	<button onclick={() => steps.push({ title: '新しいステップ', description: '' })} disabled={running}>ステップを追加</button>
+	<button onclick={() => steps.push({ title: '新しいステップ', description: '' })} disabled={pipeline.running}>ステップを追加</button>
 	<p>
 		作る場所: <PlayerPicker bind:selected={playerId} bind:player />
-		/ <input bind:value={folder} size="20" placeholder="フォルダ名（空なら日時）" disabled={running} />
+		/ <input bind:value={folder} size="20" placeholder="フォルダ名（空なら日時）" disabled={pipeline.running} />
 	</p>
-	<button onclick={() => run()} disabled={running || !playerId}>{running ? '実装中…' : 'このプランで実装する'}</button>
+	<button onclick={() => run()} disabled={pipeline.running || !playerId}>{pipeline.running ? '実装中…' : 'このプランで実装する'}</button>
 {/if}
 
-{#if results.length}
+{#if pipeline.results.length}
 	<h2>実装結果</h2>
-	{#if projectPath}
-		<p>書き出し先: <code>{projectPath}</code></p>
-		{#if !running && project}
-			<p><a href="/api/projects/{encodeURIComponent(project)}/download?player={encodeURIComponent(playerId)}" download>ZIP でダウンロード</a></p>
+	{#if pipeline.projectPath}
+		<p>書き出し先: <code>{pipeline.projectPath}</code></p>
+		{#if !pipeline.running && pipeline.project}
+			<p><a href="/api/projects/{encodeURIComponent(pipeline.project)}/download?player={encodeURIComponent(playerId)}" download>ZIP でダウンロード</a></p>
 		{/if}
 	{/if}
 	<ol>
-		{#each results as result, i}
+		{#each pipeline.results as result, i}
 			<li>
 				{steps[i]?.title}: {statusLabel[result.status]}
 				{#if result.error}
@@ -248,10 +149,10 @@
 						{/each}
 					</div>
 				{/each}
-				{#if result.status === 'rejected' && !running}
+				{#if result.status === 'rejected' && !pipeline.running}
 					<p>
-						<button onclick={() => approveAnyway(i)}>このまま承認して次へ進む</button>
-						<button onclick={() => Object.assign(results[i], { status: 'error', error: 'ここで止めました' })}>ここで止める</button>
+						<button onclick={() => pipeline.approveAnyway(i)}>このまま承認して次へ進む</button>
+						<button onclick={() => pipeline.stop(i)}>ここで止める</button>
 					</p>
 				{/if}
 				{#each result.files as file}

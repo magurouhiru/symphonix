@@ -1,8 +1,9 @@
 import { json } from '@sveltejs/kit';
-import { implementStep } from '#lib/server/implement.js';
-import { targetFrom } from '#lib/server/target.js';
-import { checkProjectName } from '#lib/server/workspace.js';
+import { implementStep } from '#lib/pipeline/implement.server.js';
+import { targetFrom } from '#lib/players/target.server.js';
+import { checkProjectName } from '#lib/players/workspace.server.js';
 import type { RequestHandler } from './$types';
+import { errorMessage } from '#lib/shared/errors.js';
 
 // プランの 1 ステップを実装し、プレイヤーの作業フォルダの project に書き出す
 export const POST: RequestHandler = async ({ request }) => {
@@ -19,6 +20,6 @@ export const POST: RequestHandler = async ({ request }) => {
 		const files = await implementStep(target, want, steps, index, feedback);
 		return json({ files });
 	} catch (e) {
-		return json({ error: e instanceof Error ? e.message : String(e) }, { status: 502 });
+		return json({ error: errorMessage(e) }, { status: 502 });
 	}
 };

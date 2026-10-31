@@ -1,5 +1,5 @@
 import { json } from '@sveltejs/kit';
-import { submitResult } from '#lib/server/players.js';
+import { submitResult } from '#lib/players/registry.server.js';
 import type { RequestHandler } from './$types';
 
 // プレイヤーが仕事の結果を返す。{ jobId, result } か { jobId, error }

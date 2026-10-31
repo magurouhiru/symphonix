@@ -1,5 +1,5 @@
 import { json } from '@sveltejs/kit';
-import { nextJob } from '#lib/server/players.js';
+import { nextJob } from '#lib/players/registry.server.js';
 import type { RequestHandler } from './$types';
 
 // 毎回つなぎ直させる。symphonix を再起動したとき、終了待ちの古いプロセスに

@@ -1,6 +1,7 @@
 import { json } from '@sveltejs/kit';
-import { listProjects } from '#lib/server/workspace.js';
+import { listProjects } from '#lib/players/workspace.server.js';
 import type { RequestHandler } from './$types';
+import { errorMessage } from '#lib/shared/errors.js';
 
 // プレイヤーの作業フォルダにあるプロジェクトの一覧（?player=プレイヤーの id）
 export const GET: RequestHandler = async ({ url }) => {
@@ -9,6 +10,6 @@ export const GET: RequestHandler = async ({ url }) => {
 	try {
 		return json({ projects: await listProjects(player) });
 	} catch (e) {
-		return json({ error: e instanceof Error ? e.message : String(e) }, { status: 502 });
+		return json({ error: errorMessage(e) }, { status: 502 });
 	}
 };

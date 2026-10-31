@@ -1,7 +1,6 @@
 <script lang="ts">
-	import { recommended } from '#lib/recommended.js';
-	import { roleLabels, roles, type Role } from '#lib/roles.js';
-	import type { StatusReport } from '#lib/status.js';
+	import { recommended, roleLabels, roles, type Role } from '#lib/ai/models.js';
+	import type { StatusReport } from '#lib/ai/status.js';
 
 	type RoleSetting = { model: string; default: string };
 
@@ -44,9 +43,6 @@
 		load().catch((e) => (error = String(e)));
 	});
 </script>
-
-<h1>symphonix</h1>
-<p><a href="/">プラン作成に戻る</a> | <a href="/projects">成果物</a> | <a href="/personas">ペルソナ</a> | <a href="/status">LocalAI の状態</a> | 使うモデル</p>
 
 <p>
 	用途ごとに使うモデルを選べます。おすすめから選ぶか、インストール済みのモデルから選ぶか、

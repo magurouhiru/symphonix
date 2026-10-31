@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { errorMessage } from '#lib/shared/errors.js';
 	let recorder: MediaRecorder | null = null;
 	let chunks: Blob[] = [];
 	let recording = $state(false);
@@ -67,14 +68,11 @@
 			audioUrl = URL.createObjectURL(await res.blob());
 			status = '';
 		} catch (e) {
-			error = e instanceof Error ? e.message : String(e);
+			error = errorMessage(e);
 			status = '';
 		}
 	}
 </script>
-
-<h1>symphonix</h1>
-<p><a href="/">プラン作成に戻る</a> | 音声で話しかける</p>
 
 {#if recording}
 	<button onclick={stop}>■ 録音を止めて送る</button>
