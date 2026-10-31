@@ -1,5 +1,6 @@
 // 実装したステップを、割り当てたレビュアーが 1 人ずつ確認する
 import { chat } from '#lib/ai/chat.server.js';
+import { translatorFor } from '#lib/ai/translate.server.js';
 import { reviewers, withPersona } from '#lib/personas/store.server.js';
 import { readProject, type Target } from '#lib/players/workspace.server.js';
 import type { PlanStep, Review } from './types.js';
@@ -24,13 +25,18 @@ export async function reviewStep(
 	paths: string[]
 ): Promise<Review[]> {
 	const files = await readProject(target, paths);
-	const plan = steps.map((s, i) => `${i + 1}. ${s.title}: ${s.description}`).join('\n');
 	const filesText = files.map((f) => `=== FILE: ${f.path} ===\n${numbered(f.content)}\n=== END FILE ===`).join('\n');
-	const step = steps[index];
-	const user = `What to build:\n${request}\n\nPlan:\n${plan}\n\nCurrent step (${index + 1}): ${step.title}\n${step.description}\n\nFiles written in this step:\n${filesText}`;
+	const prompt = (want: string, plan: PlanStep[]) => {
+		const list = plan.map((s, i) => `${i + 1}. ${s.title}: ${s.description}`).join('\n');
+		const step = plan[index];
+		return `What to build:\n${want}\n\nPlan:\n${list}\n\nCurrent step (${index + 1}): ${step.title}\n${step.description}\n\nFiles written in this step:\n${filesText}`;
+	};
 	// VRAM に 1 つしかモデルを載せられないので、並列にせず順番に聞く
 	const results: Review[] = [];
 	for (const persona of reviewers()) {
+		// 日本語が苦手なモデルには英語で頼み、コメントを日本語に戻す
+		const t = translatorFor(persona);
+		const user = prompt(await t.toModel(request), await t.steps(steps, 'en'));
 		const answer = await chat(
 			[
 				{ role: 'system', content: withPersona(persona.prompt, SYSTEM_PROMPT) },
@@ -38,11 +44,13 @@ export async function reviewStep(
 			],
 			persona.resolvedModel
 		);
+		const review = parseReview(answer);
 		results.push({
 			persona: persona.id,
 			name: persona.name,
 			model: persona.resolvedModel,
-			...parseReview(answer)
+			approved: review.approved,
+			comment: await t.fromModel(review.comment)
 		});
 	}
 	return results;

@@ -5,7 +5,7 @@
 	let assigned = $state<Record<Task, string> | null>(null);
 	let reviewers = $state<string[]>([]);
 	let defaultModel = $state('');
-	let draft = $state({ name: '', prompt: '', model: '' });
+	let draft = $state({ name: '', prompt: '', model: '', translate: false });
 	let message = $state('');
 	let error = $state('');
 
@@ -37,7 +37,7 @@
 
 	async function create() {
 		if (await send('/api/personas', 'POST', draft, `${draft.name} を追加しました。`)) {
-			draft = { name: '', prompt: '', model: '' };
+			draft = { name: '', prompt: '', model: '', translate: false };
 		}
 	}
 
@@ -114,6 +114,9 @@
 		<legend>{p.name}{#if usedBy(p.id).length}（{usedBy(p.id).join('、')}を担当中）{/if}</legend>
 		<label>名前 <input bind:value={p.name} size="20" /></label>
 		<label>モデル <input bind:value={p.model} size="30" placeholder={defaultModel} /></label>
+		<label title="依頼やプランを英語に訳して渡し、返ってきたプランやコメントを日本語に戻します（翻訳には使うモデルの「翻訳」のモデルを使います）">
+			<input type="checkbox" bind:checked={p.translate} /> 日本語が苦手なモデル（英語に訳して渡す）
+		</label>
 		<div><textarea bind:value={p.prompt} rows="3" cols="80" placeholder="人物像（例: You are a senior engineer who...）"></textarea></div>
 		<button onclick={() => send(`/api/personas/${p.id}`, 'PUT', p, `${p.name} を保存しました。`)}>保存</button>
 		<button
@@ -128,6 +131,7 @@
 	<legend>新しいペルソナ</legend>
 	<label>名前 <input bind:value={draft.name} size="20" /></label>
 	<label>モデル <input bind:value={draft.model} size="30" placeholder={defaultModel} /></label>
+	<label><input type="checkbox" bind:checked={draft.translate} /> 日本語が苦手なモデル（英語に訳して渡す）</label>
 	<div><textarea bind:value={draft.prompt} rows="3" cols="80" placeholder="人物像（例: You are a senior engineer who...）"></textarea></div>
 	<button onclick={create} disabled={!draft.name.trim()}>追加</button>
 </fieldset>

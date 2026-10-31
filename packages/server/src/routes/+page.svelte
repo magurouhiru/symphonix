@@ -9,7 +9,7 @@
 	import type { PlayerInfo } from '@symphonix/protocol';
 
 	// 作業ごとの担当ペルソナ（表示用）
-	let staff = $state<{ task: Task; name: string; model: string }[]>([]);
+	let staff = $state<{ task: Task; name: string; model: string; translate: boolean }[]>([]);
 	let reviewerNames = $state<string[]>([]);
 	$effect(() => {
 		fetch('/api/personas')
@@ -23,7 +23,7 @@
 				}) => {
 					staff = tasks.map((task) => {
 						const p = data.personas.find((x) => x.id === data.assignments[task]);
-						return { task, name: p?.name ?? '?', model: p?.model || data.defaultModel };
+						return { task, name: p?.name ?? '?', model: p?.model || data.defaultModel, translate: !!p?.translate };
 					});
 					reviewerNames = data.reviewers.map((id) => data.personas.find((x) => x.id === id)?.name ?? '?');
 				}
@@ -90,7 +90,7 @@
 {#if staff.length}
 	<p>
 		担当:
-		{#each staff as s, i}{i ? '、' : ''}{taskLabels[s.task]}は{s.name}（{s.model}）{/each}、レビューは{reviewerNames.length
+		{#each staff as s, i}{i ? '、' : ''}{taskLabels[s.task]}は{s.name}（{s.model}{s.translate ? '、英訳' : ''}）{/each}、レビューは{reviewerNames.length
 			? reviewerNames.join('と')
 			: 'なし'}
 		<a href="/personas">変更</a>
