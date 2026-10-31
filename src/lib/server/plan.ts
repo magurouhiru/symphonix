@@ -1,4 +1,5 @@
 import { chat } from './model.js';
+import { personaFor, withPersona } from './personas.js';
 import type { PlanStep } from '../plan.js';
 
 const SYSTEM_PROMPT = `You are a software planner. The user describes something they want to build.
@@ -8,11 +9,17 @@ Respond with JSON only, in this exact shape:
 Write titles and descriptions in the same language as the user.`;
 
 export async function createPlan(request: string): Promise<PlanStep[]> {
-	const content = await chat([
-		{ role: 'system', content: SYSTEM_PROMPT },
-		{ role: 'user', content: request }
-	]);
-	return parsePlan(content);
+	const persona = personaFor('plan');
+	const messages = [
+		{ role: 'system' as const, content: withPersona(persona.prompt, SYSTEM_PROMPT) },
+		{ role: 'user' as const, content: request }
+	];
+	// 読み取れない返事が来たら、もう一度だけ頼み直す
+	try {
+		return parsePlan(await chat(messages, persona.resolvedModel));
+	} catch {
+		return parsePlan(await chat(messages, persona.resolvedModel));
+	}
 }
 
 // 小さいモデルは JSON の前後に文章やコードフェンスを付けがちなので、最初の { から最後の } までを読む
