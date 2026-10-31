@@ -1,0 +1,28 @@
+{
+	"name": "@symphonix/player",
+	"private": true,
+	"version": "0.0.1",
+	"description": "symphonix に接続し、作業フォルダでファイルの読み書きやコマンドの実行を受け持つ",
+	"type": "module",
+	"bin": {
+		"symphonix-player": "./dist/cli.js"
+	},
+	"exports": {
+		".": {
+			"types": "./dist/player.d.ts",
+			"default": "./dist/player.js"
+		}
+	},
+	"scripts": {
+		"build": "tsc -b",
+		"check": "tsc -b",
+		"start": "tsc -b && node dist/cli.js"
+	},
+	"dependencies": {
+		"@symphonix/protocol": "workspace:*"
+	},
+	"devDependencies": {
+		"@types/node": "^22",
+		"typescript": "^6.0.3"
+	}
+}

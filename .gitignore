@@ -5,8 +5,11 @@ node_modules
 .vercel
 .netlify
 .wrangler
-/.svelte-kit
-/build
+.svelte-kit
+/packages/server/build
+# TypeScript のビルド結果（protocol と player）
+dist
+*.tsbuildinfo
 
 # OS
 .DS_Store
@@ -27,4 +30,4 @@ vite.config.ts.timestamp-*
 !/workspace/.gitkeep
 
 # Model settings changed from the UI
-/data
+/packages/server/data
