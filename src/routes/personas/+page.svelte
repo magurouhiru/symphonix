@@ -3,6 +3,7 @@
 
 	let personas = $state<Persona[]>([]);
 	let assigned = $state<Record<Task, string> | null>(null);
+	let reviewers = $state<string[]>([]);
 	let defaultModel = $state('');
 	let draft = $state({ name: '', prompt: '', model: '' });
 	let message = $state('');
@@ -12,6 +13,7 @@
 		const data = await fetch('/api/personas').then((r) => r.json());
 		personas = data.personas;
 		assigned = data.assignments;
+		reviewers = data.reviewers;
 		defaultModel = data.defaultModel;
 	}
 
@@ -39,7 +41,15 @@
 		}
 	}
 
-	const usedBy = (id: string) => tasks.filter((task) => assigned?.[task] === id).map((task) => taskLabels[task]);
+	const usedBy = (id: string) => [
+		...tasks.filter((task) => assigned?.[task] === id).map((task) => taskLabels[task]),
+		...(reviewers.includes(id) ? ['レビュー'] : [])
+	];
+
+	function toggleReviewer(id: string, on: boolean) {
+		const next = on ? [...reviewers, id] : reviewers.filter((r) => r !== id);
+		send('/api/personas/reviewers', 'PUT', { reviewers: next }, 'レビュアーを変えました。');
+	}
 
 	$effect(() => {
 		load().catch((e) => (error = String(e)));
@@ -77,6 +87,22 @@
 					</td>
 				</tr>
 			{/each}
+			<tr>
+				<td>レビュー</td>
+				<td>
+					{#each personas as p}
+						<label>
+							<input
+								type="checkbox"
+								checked={reviewers.includes(p.id)}
+								onchange={(e) => toggleReviewer(p.id, e.currentTarget.checked)}
+							/>
+							{p.name}
+						</label><br />
+					{/each}
+					<small>実装のたびにチェックした全員がレビューし、全員が承認したら次のステップへ進みます。だれもチェックしなければレビューしません。</small>
+				</td>
+			</tr>
 		</tbody>
 	</table>
 {/if}

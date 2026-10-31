@@ -20,7 +20,8 @@ export async function implementStep(
 	project: string,
 	request: string,
 	steps: PlanStep[],
-	index: number
+	index: number,
+	feedback = ''
 ): Promise<GeneratedFile[]> {
 	const existing = await readProject(project);
 	const plan = steps.map((s, i) => `${i + 1}. ${s.title}: ${s.description}`).join('\n');
@@ -33,7 +34,9 @@ export async function implementStep(
 		{ role: 'system' as const, content: withPersona(persona.prompt, SYSTEM_PROMPT) },
 		{
 			role: 'user' as const,
-			content: `What to build:\n${request}\n\nPlan:\n${plan}\n\nFiles so far:\n${filesText}\n\nCurrent step (${index + 1}): ${step.title}\n${step.description}`
+			content: `What to build:\n${request}\n\nPlan:\n${plan}\n\nFiles so far:\n${filesText}\n\nCurrent step (${index + 1}): ${step.title}\n${step.description}${
+				feedback ? `\n\nReviewers asked for these changes to your work on this step. Fix them:\n${feedback}` : ''
+			}`
 		}
 	];
 	let lastError: unknown;

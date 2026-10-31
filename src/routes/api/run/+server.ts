@@ -12,7 +12,9 @@ export const POST: RequestHandler = async ({ request }) => {
 	}
 	const project = typeof body.project === 'string' && body.project ? body.project : newProjectName();
 	try {
-		const files = await implementStep(project, want, steps, index);
+		// feedback はレビュアーの指摘。あれば同じステップを直させる
+		const feedback = typeof body.feedback === 'string' ? body.feedback : '';
+		const files = await implementStep(project, want, steps, index, feedback);
 		return json({ project, dir: projectDir(project), files });
 	} catch (e) {
 		return json({ project, error: e instanceof Error ? e.message : String(e) }, { status: 502 });
