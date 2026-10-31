@@ -38,17 +38,21 @@ export async function writeFiles(target: Target, files: GeneratedFile[]): Promis
 	return targets.map(({ full }) => path.posix.relative(project, full));
 }
 
-// プロジェクト内のファイルを、プロジェクトからの相対パスで返す（node_modules などはプレイヤーが除く）
-export async function projectFiles(target: Target): Promise<string[]> {
+// プロジェクト内のファイルを、プロジェクトからの相対パスとサイズで返す（node_modules などはプレイヤーが除く）
+export async function projectEntries(target: Target): Promise<{ path: string; size: number }[]> {
 	const project = checkProjectName(target.project);
 	try {
 		const { entries } = await callPlayer(target.player, 'list', { dir: project });
-		return entries.filter((e) => e.type === 'file').map((e) => e.path);
+		return entries.filter((e) => e.type === 'file').map((e) => ({ path: e.path, size: e.size ?? 0 }));
 	} catch (e) {
 		// まだ何も書いていないプロジェクト
 		if (e instanceof Error && /ENOENT/.test(e.message)) return [];
 		throw e;
 	}
+}
+
+export async function projectFiles(target: Target): Promise<string[]> {
+	return (await projectEntries(target)).map((e) => e.path);
 }
 
 async function readBytes(target: Target, rel: string): Promise<Buffer> {
@@ -62,9 +66,10 @@ export async function readText(target: Target, rel: string): Promise<string> {
 	return (await readBytes(target, rel)).toString('utf8');
 }
 
-export async function readProject(target: Target): Promise<GeneratedFile[]> {
+// paths を省くとプロジェクトのすべてのファイルを読む
+export async function readProject(target: Target, paths?: string[]): Promise<GeneratedFile[]> {
 	const files: GeneratedFile[] = [];
-	for (const rel of await projectFiles(target)) {
+	for (const rel of paths ?? (await projectFiles(target))) {
 		files.push({ path: rel, content: await readText(target, rel) });
 	}
 	return files;

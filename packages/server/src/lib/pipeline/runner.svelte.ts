@@ -85,7 +85,12 @@ export class PipelineRun {
 		let feedback = '';
 		for (let attempt = 0; attempt <= MAX_REVISIONS; attempt++) {
 			result.status = attempt === 0 ? 'running' : 'revising';
-			const { files } = await postJson<{ files: GeneratedFile[] }>('/api/run', { ...step, ...target, feedback });
+			const { files } = await postJson<{ files: GeneratedFile[] }>('/api/run', {
+				...step,
+				...target,
+				feedback,
+				written: result.files.map((f) => f.path)
+			});
 			const byPath = new Map(result.files.map((f) => [f.path, f]));
 			for (const f of files) byPath.set(f.path, f);
 			result.files = [...byPath.values()];

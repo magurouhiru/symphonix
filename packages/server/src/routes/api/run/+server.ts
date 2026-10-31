@@ -17,7 +17,8 @@ export const POST: RequestHandler = async ({ request }) => {
 		checkProjectName(target.project);
 		// feedback は自動チェックやレビュアーの指摘。あれば同じステップを直させる
 		const feedback = typeof body.feedback === 'string' ? body.feedback : '';
-		const files = await implementStep(target, want, steps, index, feedback);
+		const written = Array.isArray(body.written) ? body.written.filter((p: unknown) => typeof p === 'string') : [];
+		const files = await implementStep(target, want, steps, index, feedback, written);
 		return json({ files });
 	} catch (e) {
 		return json({ error: errorMessage(e) }, { status: 502 });
