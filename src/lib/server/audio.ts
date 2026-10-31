@@ -1,11 +1,11 @@
 // LocalAI の OpenAI 互換 API で文字起こしと読み上げをする（文章・画像と同じサーバー）
 const baseUrl = process.env.AI_BASE_URL ?? 'http://localai:8080/v1';
-const sttModel = process.env.STT_MODEL ?? 'whisper-small';
-const ttsModel = process.env.TTS_MODEL ?? 'supertonic-3';
+import { roleModel } from './settings.js';
+
 
 export async function transcribe(audio: Blob, filename: string): Promise<string> {
 	const form = new FormData();
-	form.append('model', sttModel);
+	form.append('model', roleModel('stt'));
 	form.append('language', 'ja');
 	form.append('file', audio, filename);
 	const res = await fetch(`${baseUrl}/audio/transcriptions`, { method: 'POST', body: form });
@@ -30,7 +30,7 @@ export async function speak(text: string): Promise<Response> {
 	const res = await fetch(`${baseUrl}/audio/speech`, {
 		method: 'POST',
 		headers: { 'Content-Type': 'application/json' },
-		body: JSON.stringify({ model: ttsModel, input: plainText(text), language: 'ja' })
+		body: JSON.stringify({ model: roleModel('tts'), input: plainText(text), language: 'ja' })
 	});
 	if (!res.ok) {
 		throw new Error(`AI server error ${res.status}: ${await res.text()}`);
@@ -38,4 +38,12 @@ export async function speak(text: string): Promise<Response> {
 	return res;
 }
 
-export const audioModelInfo = { baseUrl, sttModel, ttsModel };
+export const audioModelInfo = {
+	baseUrl,
+	get sttModel() {
+		return roleModel('stt');
+	},
+	get ttsModel() {
+		return roleModel('tts');
+	}
+};

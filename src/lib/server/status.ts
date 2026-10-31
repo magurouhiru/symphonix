@@ -1,19 +1,17 @@
 // LocalAI サーバーの死活と、各モデルのインストール・読み込み状態をまとめて取得する。
 // symphonix が使うモデルが入っていなければ、LocalAI のギャラリーから取得させる
+import { roleLabels, type Role } from '../roles.js';
 import type { DownloadStatus, GpuStatus, ModelStatus, ServerState, StatusReport } from '../status.js';
+import { roleModels } from './settings.js';
 
 const baseUrl = process.env.AI_BASE_URL ?? 'http://localai:8080/v1';
 // /readyz や /system は /v1 の外にある
 const rootUrl = baseUrl.replace(/\/v1\/?$/, '');
 
-// symphonix がどの用途でどのモデルを使っているか
-const roles: Record<string, string> = {
-	文章: process.env.MODEL ?? 'gemma-4-e4b-it-qat-q4_0',
-	画像: process.env.IMAGE_MODEL ?? 'sd-1.5-ggml',
-	文字起こし: process.env.STT_MODEL ?? 'whisper-small',
-	読み上げ: process.env.TTS_MODEL ?? 'supertonic-3'
-};
-const requiredModels = [...new Set(Object.values(roles))];
+// symphonix が今使っているモデル（設定画面で変わるので毎回読む）
+function requiredModels(): string[] {
+	return [...new Set(Object.values(roleModels()))];
+}
 
 // 失敗したダウンロードを再試行するまでの間隔
 const RETRY_MS = 60_000;
@@ -66,7 +64,7 @@ function jobFor(id: string, jobs: Record<string, Job>): Job | undefined {
 
 // 入っていない必須モデルのダウンロードを LocalAI に依頼する。進行中・直近に失敗したものは依頼しない
 async function ensureModels(installed: string[], jobs: Record<string, Job>) {
-	for (const id of requiredModels) {
+	for (const id of requiredModels()) {
 		if (installed.includes(id)) continue;
 		const job = jobFor(id, jobs);
 		if (job && !job.processed) continue;
@@ -89,7 +87,7 @@ async function ensureModels(installed: string[], jobs: Record<string, Job>) {
 // モデルごとのダウンロード状況。順番待ちは依頼した順に番号を振る
 function downloadsFrom(installed: string[], jobs: Record<string, Job>): Map<string, DownloadStatus> {
 	const result = new Map<string, DownloadStatus>();
-	const pending = requiredModels
+	const pending = requiredModels()
 		.filter((id) => !installed.includes(id))
 		.map((id) => ({ id, job: jobFor(id, jobs) }))
 		.filter((x): x is { id: string; job: Job } => !!x.job)
@@ -163,15 +161,19 @@ function modelsFrom(
 	loaded: { id: string; backend?: string }[],
 	downloads: Map<string, DownloadStatus>
 ): ModelStatus[] {
-	const ids = [...new Set([...requiredModels, ...installed])];
+	const current = roleModels();
+	// LocalAI が返す順番は毎回変わるので、使っていないモデルは名前順に並べる
+	const required = requiredModels();
+	const others = installed.filter((id) => !required.includes(id)).sort();
+	const ids = [...required, ...others];
 	return ids.map((id) => {
 		const live = loaded.find((m) => m.id === id);
 		const isInstalled = installed.includes(id);
 		return {
 			id,
-			roles: Object.entries(roles)
+			roles: Object.entries(current)
 				.filter(([, model]) => model === id)
-				.map(([role]) => role),
+				.map(([role]) => roleLabels[role as Role]),
 			installed: isInstalled,
 			loaded: !!live,
 			backend: live?.backend,
