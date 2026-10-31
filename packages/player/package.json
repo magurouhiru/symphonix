@@ -14,15 +14,17 @@
 		}
 	},
 	"scripts": {
-		"build": "tsc -b",
+		"build": "tsc -b && pnpm bundle",
 		"check": "tsc -b",
-		"start": "tsc -b && node dist/cli.js"
+		"start": "tsc -b && node dist/cli.js",
+		"bundle": "esbuild src/cli.ts --bundle --platform=node --format=esm --target=node18 --outfile=dist/symphonix-player.js --log-level=warning"
 	},
 	"dependencies": {
 		"@symphonix/protocol": "workspace:*"
 	},
 	"devDependencies": {
 		"@types/node": "^22",
+		"esbuild": "^0.28.2",
 		"typescript": "^6.0.3"
 	}
 }

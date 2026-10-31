@@ -32,7 +32,12 @@ symphonix はファイルを直接触らず、生成したファイルの読み�
    ```sh
    pnpm player   # workspace/ を作業フォルダにする
    ```
-   別の場所（別の devcontainer など）で作業したいときは、そこにこのリポジトリを clone して `pnpm install && pnpm build` をしてから、`node packages/player/dist/cli.js --server http://<symphonix のホスト>:5173 --root <作業フォルダ>` を実行します。外部のライブラリは使っておらず（`@symphonix/protocol` だけ）、Node.js 18 以上で動きます。
+   別の場所（別の devcontainer など）で作業したいときは、symphonix が配っている 1 ファイルのプレイヤーを取ってきて実行します。Node.js 18 以上があれば、ほかに何も要りません。
+   ```sh
+   curl -O http://host.docker.internal:5173/symphonix-player.js
+   node symphonix-player.js --server http://host.docker.internal:5173 --root <作業フォルダ>
+   ```
+   symphonix のコンテナはポート 5173 を公開しているので、別のコンテナからは `host.docker.internal:5173` で届きます（Windows からは今まで通り `localhost:5173`）。
    - プレイヤーは作業フォルダの外を読み書きしません
    - 実行するコマンドは `node`、`npm`、`python3` だけです。変えるときは `--allow node,npm` のように指定します
    - `packages/player/src/player.ts` の `createPlayer` が本体で、`cli.ts` はそれを起動するだけです。VS Code 拡張からは `@symphonix/player` の `createPlayer` をそのまま使えます

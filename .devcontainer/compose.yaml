@@ -3,6 +3,9 @@ services:
     image: mcr.microsoft.com/devcontainers/typescript-node:22
     container_name: symphonix-dev
     command: sleep infinity
+    # 別の devcontainer のプレイヤーから http://host.docker.internal:5173 でつなげるよう、ポートを公開する
+    ports:
+      - 5173:5173
     volumes:
       - ..:/workspaces/symphonix
       # node_modules はホストと共有せずボリュームに置く（Windows とのファイル共有は遅いため）

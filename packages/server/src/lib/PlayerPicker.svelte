@@ -4,6 +4,7 @@
 	// selected はプレイヤーの id。前回選んだものを覚えておく
 	let { selected = $bindable(''), player = $bindable<PlayerInfo | undefined>() } = $props();
 	let players = $state<PlayerInfo[]>([]);
+	const origin = typeof location === 'undefined' ? '' : location.origin;
 
 	async function load() {
 		players = (await fetch('/api/players').then((r) => r.json())).players;
@@ -41,7 +42,9 @@
 	<span style="color: #b00">
 		プレイヤーがつながっていません。symphonix のリポジトリで <code>pnpm player</code> を実行するか、
 		作業したいフォルダで
-		<code>symphonix-player --server {typeof location === 'undefined' ? '' : location.origin} --root .</code>
-		を実行してください。
+		<code
+			>curl -O {origin}/symphonix-player.js && node symphonix-player.js --server {origin} --root .</code
+		>
+		を実行してください（別のコンテナからは {origin} の localhost を host.docker.internal に置き換えてください）。
 	</span>
 {/if}
