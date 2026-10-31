@@ -13,7 +13,7 @@
 </script>
 
 <h1>symphonix</h1>
-<p><a href="/">プラン作成に戻る</a> | 成果物 | <a href="/status">LocalAI の状態</a> | <a href="/settings">使うモデル</a></p>
+<p><a href="/">プラン作成に戻る</a> | 成果物 | <a href="/personas">ペルソナ</a> | <a href="/status">LocalAI の状態</a> | <a href="/settings">使うモデル</a></p>
 
 <p>これまでに作ったものを ZIP でダウンロードできます。</p>
 

@@ -1,5 +1,20 @@
 <script lang="ts">
+	import { taskLabels, tasks, type Persona, type Task } from '#lib/personas.js';
 	import type { PlanStep } from '#lib/plan.js';
+
+	// 作業ごとの担当ペルソナ（表示用）
+	let staff = $state<{ task: Task; name: string; model: string }[]>([]);
+	$effect(() => {
+		fetch('/api/personas')
+			.then((r) => r.json())
+			.then((data: { personas: Persona[]; assignments: Record<Task, string>; defaultModel: string }) => {
+				staff = tasks.map((task) => {
+					const p = data.personas.find((x) => x.id === data.assignments[task]);
+					return { task, name: p?.name ?? '?', model: p?.model || data.defaultModel };
+				});
+			})
+			.catch(() => {});
+	});
 
 	let want = $state('');
 	let steps = $state<PlanStep[]>([]);
@@ -69,7 +84,15 @@
 </script>
 
 <h1>symphonix</h1>
-<p><a href="/chat">モデル接続確認</a> | <a href="/image">画像生成の確認</a> | <a href="/voice">音声で話しかける</a> | <a href="/projects">成果物</a> | <a href="/status">LocalAI の状態</a> | <a href="/settings">使うモデル</a></p>
+<p><a href="/chat">モデル接続確認</a> | <a href="/image">画像生成の確認</a> | <a href="/voice">音声で話しかける</a> | <a href="/projects">成果物</a> | <a href="/personas">ペルソナ</a> | <a href="/status">LocalAI の状態</a> | <a href="/settings">使うモデル</a></p>
+
+{#if staff.length}
+	<p>
+		担当:
+		{#each staff as s, i}{i ? '、' : ''}{taskLabels[s.task]}は{s.name}（{s.model}）{/each}
+		<a href="/personas">変更</a>
+	</p>
+{/if}
 
 <form onsubmit={generate}>
 	<textarea bind:value={want} rows="4" cols="60" placeholder="作りたいもの（例: TODOアプリ）"></textarea>

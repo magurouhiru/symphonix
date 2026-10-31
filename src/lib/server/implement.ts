@@ -1,4 +1,5 @@
 import { chat } from './model.js';
+import { personaFor, withPersona } from './personas.js';
 import { readProject, writeFiles, type GeneratedFile } from './workspace.js';
 import type { PlanStep } from '../plan.js';
 
@@ -20,13 +21,17 @@ export async function implementStep(
 		? existing.map((f) => `--- ${f.path}\n${f.content}`).join('\n')
 		: '(no files yet)';
 	const step = steps[index];
-	const content = await chat([
-		{ role: 'system', content: SYSTEM_PROMPT },
-		{
+	const persona = personaFor('code');
+	const content = await chat(
+		[
+			{ role: 'system', content: withPersona(persona.prompt, SYSTEM_PROMPT) },
+			{
 			role: 'user',
 			content: `What to build:\n${request}\n\nPlan:\n${plan}\n\nFiles so far:\n${filesText}\n\nCurrent step (${index + 1}): ${step.title}\n${step.description}`
-		}
-	]);
+			}
+		],
+		persona.resolvedModel
+	);
 	const files = parseFiles(content);
 	await writeFiles(project, files);
 	return files;

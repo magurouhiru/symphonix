@@ -1,4 +1,5 @@
 import { chat } from './model.js';
+import { personaFor, withPersona } from './personas.js';
 import type { PlanStep } from '../plan.js';
 
 const SYSTEM_PROMPT = `You are a software planner. The user describes something they want to build.
@@ -8,10 +9,14 @@ Respond with JSON only, in this exact shape:
 Write titles and descriptions in the same language as the user.`;
 
 export async function createPlan(request: string): Promise<PlanStep[]> {
-	const content = await chat([
-		{ role: 'system', content: SYSTEM_PROMPT },
-		{ role: 'user', content: request }
-	]);
+	const persona = personaFor('plan');
+	const content = await chat(
+		[
+			{ role: 'system', content: withPersona(persona.prompt, SYSTEM_PROMPT) },
+			{ role: 'user', content: request }
+		],
+		persona.resolvedModel
+	);
 	return parsePlan(content);
 }
 

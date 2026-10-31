@@ -1,0 +1,113 @@
+// ペルソナの一覧と、作業ごとにどのペルソナを割り当てるかを JSON ファイルに保存する
+import { randomUUID } from 'node:crypto';
+import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import path from 'node:path';
+import { tasks, type Persona, type Task } from '../personas.js';
+import { roleModel } from './settings.js';
+
+const personasPath = path.resolve(process.env.PERSONAS_PATH ?? 'data/personas.json');
+
+type Store = { personas: Persona[]; assignments: Record<Task, string> };
+
+// 初めて起動したときのペルソナ
+const initial: Store = {
+	personas: [
+		{
+			id: 'planner',
+			name: 'プランナー',
+			prompt:
+				'You are an experienced tech lead. You keep plans small and practical, and you order steps so that each one can be checked on its own.',
+			model: ''
+		},
+		{
+			id: 'engineer',
+			name: 'エンジニア',
+			prompt:
+				'You are a careful full-stack engineer. You write simple, readable code with no unnecessary dependencies.',
+			model: ''
+		}
+	],
+	assignments: { plan: 'planner', code: 'engineer' }
+};
+
+let cache: Store | null = null;
+
+function load(): Store {
+	if (!cache) {
+		try {
+			cache = JSON.parse(readFileSync(personasPath, 'utf8'));
+		} catch {
+			cache = structuredClone(initial);
+		}
+	}
+	return cache!;
+}
+
+function save(store: Store) {
+	cache = store;
+	mkdirSync(path.dirname(personasPath), { recursive: true });
+	writeFileSync(personasPath, JSON.stringify(store, null, '\t') + '\n');
+}
+
+export function listPersonas(): Persona[] {
+	return load().personas;
+}
+
+export function assignments(): Record<Task, string> {
+	return load().assignments;
+}
+
+function clean(input: Partial<Persona>): Omit<Persona, 'id'> {
+	const name = String(input.name ?? '').trim();
+	if (!name) throw new Error('名前を入力してください');
+	return { name, prompt: String(input.prompt ?? '').trim(), model: String(input.model ?? '').trim() };
+}
+
+export function createPersona(input: Partial<Persona>): Persona {
+	const store = load();
+	const persona = { id: randomUUID(), ...clean(input) };
+	save({ ...store, personas: [...store.personas, persona] });
+	return persona;
+}
+
+export function updatePersona(id: string, input: Partial<Persona>): Persona {
+	const store = load();
+	if (!store.personas.some((p) => p.id === id)) throw new Error('ペルソナが見つかりません');
+	const persona = { id, ...clean(input) };
+	save({ ...store, personas: store.personas.map((p) => (p.id === id ? persona : p)) });
+	return persona;
+}
+
+// 作業に割り当て中のペルソナは消せない
+export function deletePersona(id: string) {
+	const store = load();
+	const used = tasks.filter((task) => store.assignments[task] === id);
+	if (used.length) throw new Error('作業に割り当て中のペルソナは削除できません');
+	save({ ...store, personas: store.personas.filter((p) => p.id !== id) });
+}
+
+export function assign(task: Task, id: string) {
+	const store = load();
+	if (!store.personas.some((p) => p.id === id)) throw new Error('ペルソナが見つかりません');
+	save({ ...store, assignments: { ...store.assignments, [task]: id } });
+}
+
+// 作業を担当するペルソナと、実際に使うモデル
+export function personaFor(task: Task): Persona & { resolvedModel: string } {
+	const store = load();
+	const persona =
+		store.personas.find((p) => p.id === store.assignments[task]) ?? initial.personas[task === 'plan' ? 0 : 1];
+	return { ...persona, resolvedModel: persona.model || roleModel('chat') };
+}
+
+// 人物像を先に書き、出力形式の指示は必ず後ろに付ける（形式が崩れると読み取れないため）
+export function withPersona(personaPrompt: string, instructions: string): string {
+	return personaPrompt ? `${personaPrompt}\n\n${instructions}` : instructions;
+}
+
+// ペルソナが個別に指定しているモデル（状態ページで自動ダウンロードするため）
+export function personaModels(): { model: string; name: string }[] {
+	return load()
+		.personas.filter((p) => p.model)
+		.map((p) => ({ model: p.model, name: p.name }));
+}

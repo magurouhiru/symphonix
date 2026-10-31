@@ -2,6 +2,7 @@
 // symphonix が使うモデルが入っていなければ、LocalAI のギャラリーから取得させる
 import { roleLabels, type Role } from '../roles.js';
 import type { DownloadStatus, GpuStatus, ModelStatus, ServerState, StatusReport } from '../status.js';
+import { personaModels } from './personas.js';
 import { roleModels } from './settings.js';
 
 const baseUrl = process.env.AI_BASE_URL ?? 'http://localai:8080/v1';
@@ -10,7 +11,7 @@ const rootUrl = baseUrl.replace(/\/v1\/?$/, '');
 
 // symphonix が今使っているモデル（設定画面で変わるので毎回読む）
 function requiredModels(): string[] {
-	return [...new Set(Object.values(roleModels()))];
+	return [...new Set([...Object.values(roleModels()), ...personaModels().map((p) => p.model)])];
 }
 
 // 失敗したダウンロードを再試行するまでの間隔
@@ -171,9 +172,14 @@ function modelsFrom(
 		const isInstalled = installed.includes(id);
 		return {
 			id,
-			roles: Object.entries(current)
-				.filter(([, model]) => model === id)
-				.map(([role]) => roleLabels[role as Role]),
+			roles: [
+				...Object.entries(current)
+					.filter(([, model]) => model === id)
+					.map(([role]) => roleLabels[role as Role]),
+				...personaModels()
+					.filter((p) => p.model === id)
+					.map((p) => `ペルソナ: ${p.name}`)
+			],
 			installed: isInstalled,
 			loaded: !!live,
 			backend: live?.backend,

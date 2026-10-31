@@ -18,6 +18,7 @@
 3. http://localhost:5173 を開き、作りたいものを入力して「プランを作る」を押すと、ステップ一覧が表示されます（タイトル・説明の編集、並べ替え、追加、削除ができます）。
    「このプランで実装する」を押すと、ステップを 1 つずつ順番にモデルに実装させ、生成したファイルを `workspace/<日時>/` に書き出します（git には入りません）。
    実装が終わると「ZIP でダウンロード」のリンクが出ます。これまでに作ったものは http://localhost:5173/projects からまとめてダウンロードできます。
+   - プラン作成と実装をどのペルソナ（人物像とモデル）に任せるかは http://localhost:5173/personas で決められます。ペルソナにモデルを指定しなければ「文章」のモデルを使います
    - モデルとの接続だけを確かめたいときは http://localhost:5173/chat
    - 画像生成は http://localhost:5173/image
    - 音声で話しかけるのは http://localhost:5173/voice（録音 → 文字起こし → 返事 → 読み上げ）
@@ -35,6 +36,7 @@ VRAM 8GB に収めるため、LocalAI は同時に 1 つのモデルしか読み
 | `IMAGE_MODEL` | `sd-1.5-ggml` | 画像生成に使うモデル |
 | `STT_MODEL` | `whisper-small` | 文字起こしに使うモデル |
 | `TTS_MODEL` | `supertonic-3` | 読み上げに使うモデル |
+| `PERSONAS_PATH` | `data/personas.json` | ペルソナと担当の保存先 |
 | `SETTINGS_PATH` | `./data/settings.json` | 画面で選んだモデルの保存先 |
 | `WORKSPACE_DIR` | `./workspace` | 生成コードの書き出し先 |
 
