@@ -69,7 +69,7 @@
 </script>
 
 <h1>symphonix</h1>
-<p><a href="/chat">モデル接続確認</a> | <a href="/image">画像生成の確認</a> | <a href="/voice">音声で話しかける</a> | <a href="/status">LocalAI の状態</a> | <a href="/settings">使うモデル</a></p>
+<p><a href="/chat">モデル接続確認</a> | <a href="/image">画像生成の確認</a> | <a href="/voice">音声で話しかける</a> | <a href="/projects">成果物</a> | <a href="/status">LocalAI の状態</a> | <a href="/settings">使うモデル</a></p>
 
 <form onsubmit={generate}>
 	<textarea bind:value={want} rows="4" cols="60" placeholder="作りたいもの（例: TODOアプリ）"></textarea>
@@ -105,6 +105,9 @@
 	<h2>実装結果</h2>
 	{#if projectPath}
 		<p>書き出し先: <code>{projectPath}</code></p>
+		{#if !running}
+			<p><a href="/api/projects/{encodeURIComponent(project)}/download" download>ZIP でダウンロード</a></p>
+		{/if}
 	{/if}
 	<ol>
 		{#each results as result, i}

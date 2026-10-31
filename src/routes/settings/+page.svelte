@@ -46,7 +46,7 @@
 </script>
 
 <h1>symphonix</h1>
-<p><a href="/">プラン作成に戻る</a> | <a href="/status">LocalAI の状態</a> | 使うモデル</p>
+<p><a href="/">プラン作成に戻る</a> | <a href="/projects">成果物</a> | <a href="/status">LocalAI の状態</a> | 使うモデル</p>
 
 <p>
 	用途ごとに使うモデルを選べます。おすすめから選ぶか、インストール済みのモデルから選ぶか、
