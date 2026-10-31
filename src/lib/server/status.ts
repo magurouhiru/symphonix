@@ -1,6 +1,6 @@
 // LocalAI サーバーの死活と、各モデルのインストール・読み込み状態をまとめて取得する。
 // symphonix が使うモデルが入っていなければ、LocalAI のギャラリーから取得させる
-import type { DownloadStatus, ModelStatus, ServerState, StatusReport } from '../status.js';
+import type { DownloadStatus, GpuStatus, ModelStatus, ServerState, StatusReport } from '../status.js';
 
 const baseUrl = process.env.AI_BASE_URL ?? 'http://localai:8080/v1';
 // /readyz や /system は /v1 の外にある
@@ -119,18 +119,19 @@ export async function getStatus(): Promise<StatusReport> {
 	const checkedAt = new Date().toISOString();
 	const state = await serverState();
 	if (state.server === 'down') {
-		return { ...state, backends: [], models: modelsFrom([], [], new Map()), checkedAt };
+		return { ...state, backends: [], gpus: [], models: modelsFrom([], [], new Map()), checkedAt };
 	}
 	// 起動中は一部の API が答えないことがあるので、取れたものだけ使う
-	const [version, models, system, jobs] = await Promise.allSettled([
+	const [version, models, system, jobs, resources] = await Promise.allSettled([
 		getJson('/version'),
 		getJson('/v1/models'),
 		getJson('/system'),
-		getJson('/models/jobs')
+		getJson('/models/jobs'),
+		getJson('/api/resources')
 	]);
 	const installed: string[] =
 		models.status === 'fulfilled' ? (models.value.data ?? []).map((m: { id: string }) => m.id) : [];
-	const loaded: { id: string; backend?: string; size_vram?: number }[] =
+	const loaded: { id: string; backend?: string }[] =
 		system.status === 'fulfilled' ? (system.value.loaded_models ?? []) : [];
 	const jobList: Record<string, Job> = jobs.status === 'fulfilled' ? (jobs.value ?? {}) : {};
 	if (state.server === 'ready' && models.status === 'fulfilled') {
@@ -140,6 +141,17 @@ export async function getStatus(): Promise<StatusReport> {
 		...state,
 		version: version.status === 'fulfilled' ? version.value.version : undefined,
 		backends: system.status === 'fulfilled' ? (system.value.backends ?? []).sort() : [],
+		// モデルごとの VRAM は NVIDIA では取れないので、GPU 全体の使用量（nvidia-smi 由来）を返す
+		gpus:
+			resources.status === 'fulfilled'
+				? (resources.value.gpus ?? []).map(
+						(g: { name: string; used_vram: number; total_vram: number }): GpuStatus => ({
+							name: g.name,
+							usedBytes: g.used_vram,
+							totalBytes: g.total_vram
+						})
+					)
+				: [],
 		models: modelsFrom(installed, loaded, downloadsFrom(installed, jobList)),
 		checkedAt
 	};
@@ -148,7 +160,7 @@ export async function getStatus(): Promise<StatusReport> {
 // symphonix が使うモデルを先に、それ以外のインストール済みモデルを後に並べる
 function modelsFrom(
 	installed: string[],
-	loaded: { id: string; backend?: string; size_vram?: number }[],
+	loaded: { id: string; backend?: string }[],
 	downloads: Map<string, DownloadStatus>
 ): ModelStatus[] {
 	const ids = [...new Set([...requiredModels, ...installed])];
@@ -163,7 +175,6 @@ function modelsFrom(
 			installed: isInstalled,
 			loaded: !!live,
 			backend: live?.backend,
-			vramBytes: live?.size_vram,
 			download: isInstalled ? undefined : downloads.get(id)
 		};
 	});

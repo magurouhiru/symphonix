@@ -19,8 +19,13 @@ export type ModelStatus = {
 	installed: boolean;
 	loaded: boolean;
 	backend?: string;
-	vramBytes?: number;
 	download?: DownloadStatus;
+};
+
+export type GpuStatus = {
+	name: string;
+	usedBytes: number;
+	totalBytes: number;
 };
 
 export type StatusReport = {
@@ -28,6 +33,7 @@ export type StatusReport = {
 	reason?: string;
 	version?: string;
 	backends: string[];
+	gpus: GpuStatus[];
 	models: ModelStatus[];
 	checkedAt: string;
 };

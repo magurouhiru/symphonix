@@ -29,8 +29,8 @@
 
 	let queued = $derived(report?.models.filter((m) => m.download?.state === 'queued') ?? []);
 
-	function gb(bytes?: number) {
-		return bytes === undefined ? '-' : `${(bytes / 1024 ** 3).toFixed(1)} GB`;
+	function gb(bytes: number) {
+		return `${(bytes / 1024 ** 3).toFixed(1)} GB`;
 	}
 </script>
 
@@ -47,6 +47,14 @@
 		{#if report.version}（LocalAI {report.version}）{/if}
 		{#if report.reason}<br /><small>{report.reason}</small>{/if}
 	</p>
+	{#each report.gpus as gpu}
+		<p>
+			GPU: {gpu.name}<br />
+			<meter min="0" max={gpu.totalBytes} value={gpu.usedBytes}></meter>
+			VRAM {gb(gpu.usedBytes)} / {gb(gpu.totalBytes)}
+		</p>
+	{/each}
+
 	{#if downloading.length || queued.length}
 		<p>
 			⬇️ モデルを準備中です（ダウンロード中: {downloading.join(', ') || 'なし'}、順番待ち: {queued.length} 件）。
@@ -56,7 +64,7 @@
 
 	<table>
 		<thead>
-			<tr><th>モデル</th><th>用途</th><th>インストール</th><th>メモリ上</th><th>VRAM</th></tr>
+			<tr><th>モデル</th><th>用途</th><th>インストール</th><th>メモリ上</th></tr>
 		</thead>
 		<tbody>
 			{#each report.models as model (model.id)}
@@ -83,7 +91,6 @@
 						{/if}
 					</td>
 					<td>{model.loaded ? `読み込み済み${model.backend ? `（${model.backend}）` : ''}` : '-'}</td>
-					<td>{gb(model.vramBytes)}</td>
 				</tr>
 			{/each}
 		</tbody>
