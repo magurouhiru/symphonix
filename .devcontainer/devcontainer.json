@@ -3,8 +3,7 @@
 	"dockerComposeFile": "compose.yaml",
 	"service": "app",
 	"workspaceFolder": "/workspaces/symphonix",
-	"forwardPorts": [5173],
-	"postCreateCommand": "sudo chown node node_modules && npm install",
+	"postCreateCommand": "sudo chown node node_modules packages/*/node_modules && sudo corepack enable && pnpm install",
 	"customizations": {
 		"vscode": {
 			"extensions": ["svelte.svelte-vscode"]

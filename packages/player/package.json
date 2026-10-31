@@ -1,0 +1,30 @@
+{
+	"name": "@symphonix/player",
+	"private": true,
+	"version": "0.0.1",
+	"description": "symphonix に接続し、作業フォルダでファイルの読み書きやコマンドの実行を受け持つ",
+	"type": "module",
+	"bin": {
+		"symphonix-player": "./dist/cli.js"
+	},
+	"exports": {
+		".": {
+			"types": "./dist/player.d.ts",
+			"default": "./dist/player.js"
+		}
+	},
+	"scripts": {
+		"build": "tsc -b && pnpm bundle",
+		"check": "tsc -b",
+		"start": "tsc -b && node dist/cli.js",
+		"bundle": "esbuild src/cli.ts --bundle --platform=node --format=esm --target=node18 --outfile=dist/symphonix-player.js --log-level=warning"
+	},
+	"dependencies": {
+		"@symphonix/protocol": "workspace:*"
+	},
+	"devDependencies": {
+		"@types/node": "^22",
+		"esbuild": "^0.28.2",
+		"typescript": "^6.0.3"
+	}
+}
