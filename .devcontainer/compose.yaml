@@ -5,6 +5,8 @@ services:
     command: sleep infinity
     volumes:
       - ..:/workspaces/symphonix
+      # node_modules はホストと共有せずボリュームに置く（Windows とのファイル共有は遅いため）
+      - node_modules:/workspaces/symphonix/node_modules
     environment:
       AI_BASE_URL: http://localai:8080/v1
       MODEL: gemma-4-e4b-it-qat-q4_0
@@ -36,5 +38,6 @@ services:
               capabilities: [gpu]
 
 volumes:
+  node_modules:
   models:
   backends:
