@@ -2,6 +2,7 @@
 // 実装 → 自動チェック → レビューを回し、エラーや指摘があれば直させる
 import { postJson } from '#lib/shared/api.js';
 import { errorMessage } from '#lib/shared/errors.js';
+import { ROOT_PROJECT } from '#lib/shared/projects.js';
 import { MAX_REVISIONS, type CheckResult, type PlanStep, type Review } from './types.js';
 
 export type GeneratedFile = { path: string; content: string };
@@ -46,7 +47,7 @@ export class PipelineRun {
 		// フォルダ名を入れなければ日時にする
 		this.project =
 			input.folder.trim() || new Date().toISOString().replace(/[-:]/g, '').replace('T', '-').slice(0, 15);
-		this.projectPath = `${input.playerRoot}/${this.project}`;
+		this.projectPath = this.project === ROOT_PROJECT ? input.playerRoot : `${input.playerRoot}/${this.project}`;
 		this.results = input.steps.map(() => ({ status: 'pending', files: [], rounds: [] }));
 		return this.#run(0);
 	}

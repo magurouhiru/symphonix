@@ -8,7 +8,7 @@ export const GET: RequestHandler = async ({ url }) => {
 	const player = url.searchParams.get('player');
 	if (!player) return json({ error: 'player is required' }, { status: 400 });
 	try {
-		return json({ projects: await listProjects(player) });
+		return json(await listProjects(player));
 	} catch (e) {
 		return json({ error: errorMessage(e) }, { status: 502 });
 	}
