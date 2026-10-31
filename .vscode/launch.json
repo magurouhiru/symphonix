@@ -1,0 +1,13 @@
+{
+	// F5 で拡張機能開発ホストを開き、packages/vscode の拡張機能を試す
+	"version": "0.2.0",
+	"configurations": [
+		{
+			"name": "symphonix の拡張機能を試す",
+			"type": "extensionHost",
+			"request": "launch",
+			"args": ["--extensionDevelopmentPath=${workspaceFolder}/packages/vscode", "${workspaceFolder}/workspace"],
+			"preLaunchTask": "symphonix: 拡張機能をビルド"
+		}
+	]
+}

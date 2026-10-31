@@ -1,0 +1,4 @@
+# 拡張機能に入れるのは package.json と dist/extension.cjs だけ
+**
+!package.json
+!dist/extension.cjs

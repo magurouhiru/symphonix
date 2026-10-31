@@ -12,6 +12,7 @@ symphonix を指揮者、ファイルを実際に読み書きする側をプレ�
 | `packages/server`（`@symphonix/server`） | symphonix 本体。プランを立て、AI に実装・レビューさせ、プレイヤーに書き出させる SvelteKit サーバー |
 | `packages/player`（`@symphonix/player`） | プレイヤー。作業フォルダを持ち、symphonix に接続して、ファイルの一覧・読み書きとコマンドの実行を受け持つ |
 | `packages/protocol`（`@symphonix/protocol`） | 両者が共有する型と API の決まりごと |
+| `packages/vscode`（`symphonix-vscode`） | プレイヤーの VS Code 拡張機能。VS Code で開いているフォルダをそのまま作業フォルダにする |
 
 symphonix はファイルを直接触らず、生成したファイルの読み書きやビルド・テストをすべてプレイヤーに頼みます。
 プレイヤーは HTTP のロングポーリングで symphonix に「次の仕事」を取りに行くので、別の devcontainer からでもつなげます。
@@ -32,7 +33,19 @@ symphonix はファイルを直接触らず、生成したファイルの読み�
    ```sh
    pnpm player   # workspace/ を作業フォルダにする
    ```
-   別の場所（別の devcontainer など）で作業したいときは、symphonix が配っている 1 ファイルのプレイヤーを取ってきて実行します。Node.js 18 以上があれば、ほかに何も要りません。
+   別の devcontainer で作業したいときは、symphonix が配っている VS Code 拡張機能を入れるのが手軽です。
+   VS Code に入っている Node.js で動くので、コンテナに Node.js が無くても使えます。そのコンテナの VS Code のターミナルで次を実行します。
+   ```sh
+   curl -fO http://host.docker.internal:5173/symphonix-player.vsix
+   code --install-extension symphonix-player.vsix
+   ```
+   コマンドパレットの「symphonix: プレイヤーを起動」か、左下のステータスバーの「symphonix」を押すと、開いているフォルダを作業フォルダにして接続します。
+   - 接続先・作業フォルダ・実行してよいコマンドは設定の `symphonix.server`、`symphonix.root`、`symphonix.allow` で変えられます。`symphonix.autoStart` を有効にすると、開いたときに自動で起動します
+   - 拡張機能はコンテナ側で動く（`extensionKind: workspace`）ので、コンテナの中のファイルとコマンドを扱います
+   - ログは「symphonix: ログを表示」で見られます
+   - この拡張機能自体を直すときは、このリポジトリで F5 を押すと拡張機能開発ホストで試せます
+
+   VS Code を使わない環境では、1 ファイルのプレイヤーを取ってきて実行します。Node.js 18 以上があれば、ほかに何も要りません。
    ```sh
    curl -fO http://host.docker.internal:5173/symphonix-player.js
    node symphonix-player.js --server http://host.docker.internal:5173 --root <作業フォルダ>

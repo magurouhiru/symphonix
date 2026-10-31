@@ -13,6 +13,7 @@ services:
       - server_node_modules:/workspaces/symphonix/packages/server/node_modules
       - player_node_modules:/workspaces/symphonix/packages/player/node_modules
       - protocol_node_modules:/workspaces/symphonix/packages/protocol/node_modules
+      - vscode_node_modules:/workspaces/symphonix/packages/vscode/node_modules
     environment:
       # pnpm のストアも node_modules と同じボリュームに置き、ハードリンクで速く入れる
       npm_config_store_dir: /workspaces/symphonix/node_modules/.pnpm-store
@@ -51,5 +52,6 @@ volumes:
   server_node_modules:
   player_node_modules:
   protocol_node_modules:
+  vscode_node_modules:
   models:
   backends:
