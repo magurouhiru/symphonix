@@ -20,6 +20,7 @@
    - モデルとの接続だけを確かめたいときは http://localhost:5173/chat
    - 画像生成は http://localhost:5173/image
    - 音声で話しかけるのは http://localhost:5173/voice（録音 → 文字起こし → 返事 → 読み上げ）
+   - 用途ごと（文章・画像・文字起こし・読み上げ）に使うモデルは http://localhost:5173/settings で変更できます（選んだ値は `data/settings.json` に保存）
    - LocalAI の死活と各モデルの状態（インストール済みか、メモリに読み込まれているか）と GPU 全体の VRAM 使用量は http://localhost:5173/status
 
 VRAM 8GB に収めるため、LocalAI は同時に 1 つのモデルしか読み込みません。文章と画像を切り替えた直後の 1 回目は読み込み待ちで遅くなります。
@@ -33,7 +34,8 @@ VRAM 8GB に収めるため、LocalAI は同時に 1 つのモデルしか読み
 | `IMAGE_MODEL` | `sd-1.5-ggml` | 画像生成に使うモデル |
 | `STT_MODEL` | `whisper-small` | 文字起こしに使うモデル |
 | `TTS_MODEL` | `supertonic-3` | 読み上げに使うモデル |
+| `SETTINGS_PATH` | `./data/settings.json` | 画面で選んだモデルの保存先 |
 | `WORKSPACE_DIR` | `./workspace` | 生成コードの書き出し先 |
 
-アプリ側の値は `.devcontainer/compose.yaml` の `app` の `environment` で変えられます。
-別のモデルを使うときは、`MODEL` などに [LocalAI のモデルギャラリー](https://models.localai.io) の名前を指定すれば、足りない分は自動でダウンロードされます。
+モデルの環境変数は画面で何も選んでいないときの既定値です。アプリ側の値は `.devcontainer/compose.yaml` の `app` の `environment` で変えられます。
+別のモデルを使うときは、`/settings` の画面か `MODEL` などの環境変数に [LocalAI のモデルギャラリー](https://models.localai.io) の名前を指定すれば、足りない分は自動でダウンロードされます。

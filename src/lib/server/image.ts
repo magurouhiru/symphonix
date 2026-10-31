@@ -1,12 +1,13 @@
 // LocalAI の OpenAI 互換 API で画像を生成する（文章と同じサーバー）
 const baseUrl = process.env.AI_BASE_URL ?? 'http://localai:8080/v1';
-const model = process.env.IMAGE_MODEL ?? 'sd-1.5-ggml';
+import { roleModel } from './settings.js';
+
 
 export async function generateImage(prompt: string, size = '512x512'): Promise<string> {
 	const res = await fetch(`${baseUrl}/images/generations`, {
 		method: 'POST',
 		headers: { 'Content-Type': 'application/json' },
-		body: JSON.stringify({ model, prompt, size, response_format: 'b64_json' })
+		body: JSON.stringify({ model: roleModel('image'), prompt, size, response_format: 'b64_json' })
 	});
 	if (!res.ok) {
 		throw new Error(`AI server error ${res.status}: ${await res.text()}`);
@@ -19,4 +20,9 @@ export async function generateImage(prompt: string, size = '512x512'): Promise<s
 	return b64;
 }
 
-export const imageModelInfo = { baseUrl, model };
+export const imageModelInfo = {
+	baseUrl,
+	get model() {
+		return roleModel('image');
+	}
+};

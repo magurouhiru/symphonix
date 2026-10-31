@@ -24,3 +24,6 @@ vite.config.ts.timestamp-*
 
 # Generated code (not committed)
 /workspace
+
+# Model settings changed from the UI
+/data
