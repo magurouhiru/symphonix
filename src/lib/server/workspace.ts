@@ -1,4 +1,4 @@
-import { mkdir, readdir, readFile, writeFile } from 'node:fs/promises';
+import { mkdir, readdir, readFile, stat, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 
 const root = path.resolve(process.env.WORKSPACE_DIR ?? 'workspace');
@@ -19,7 +19,9 @@ function resolveInside(base: string, relative: string): string {
 }
 
 export function projectDir(project: string): string {
-	return resolveInside(root, project);
+	const dir = resolveInside(root, project);
+	if (dir === root) throw new Error(`プロジェクト名が不正です: ${project}`);
+	return dir;
 }
 
 export async function writeFiles(project: string, files: GeneratedFile[]): Promise<string[]> {
@@ -43,6 +45,36 @@ export async function readProject(project: string): Promise<GeneratedFile[]> {
 		if (!entry.isFile()) continue;
 		const full = path.join(entry.parentPath, entry.name);
 		files.push({ path: path.relative(dir, full), content: await readFile(full, 'utf8') });
+	}
+	return files;
+}
+
+export type ProjectSummary = { name: string; files: number; updatedAt: string };
+
+// 作業フォルダにあるプロジェクトを新しい順に返す
+export async function listProjects(): Promise<ProjectSummary[]> {
+	const entries = await readdir(root, { withFileTypes: true }).catch(() => []);
+	const projects: ProjectSummary[] = [];
+	for (const entry of entries) {
+		if (!entry.isDirectory()) continue;
+		const dir = path.join(root, entry.name);
+		const files = (await readdir(dir, { recursive: true, withFileTypes: true })).filter((f) => f.isFile());
+		const times = await Promise.all(files.map((f) => stat(path.join(f.parentPath, f.name))));
+		const updated = Math.max((await stat(dir)).mtimeMs, ...times.map((t) => t.mtimeMs));
+		projects.push({ name: entry.name, files: files.length, updatedAt: new Date(updated).toISOString() });
+	}
+	return projects.sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
+}
+
+// ZIP にするため、プロジェクトのファイルをバイト列のまま読む
+export async function readProjectBytes(project: string): Promise<Record<string, Uint8Array>> {
+	const dir = projectDir(project);
+	const entries = await readdir(dir, { recursive: true, withFileTypes: true });
+	const files: Record<string, Uint8Array> = {};
+	for (const entry of entries) {
+		if (!entry.isFile()) continue;
+		const full = path.join(entry.parentPath, entry.name);
+		files[path.relative(dir, full).split(path.sep).join('/')] = await readFile(full);
 	}
 	return files;
 }
