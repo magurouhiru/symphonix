@@ -1,5 +1,5 @@
 import { json } from '@sveltejs/kit';
-import { registerPlayer } from '#lib/server/players.js';
+import { registerPlayer } from '#lib/players/registry.server.js';
 import type { RequestHandler } from './$types';
 
 // プレイヤーの接続。{ name, root, allow } を受け取って id を返す

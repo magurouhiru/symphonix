@@ -1,9 +1,10 @@
 // LocalAI サーバーの死活と、各モデルのインストール・読み込み状態をまとめて取得する。
 // symphonix が使うモデルが入っていなければ、LocalAI のギャラリーから取得させる
-import { roleLabels, type Role } from '../roles.js';
-import type { DownloadStatus, GpuStatus, ModelStatus, ServerState, StatusReport } from '../status.js';
-import { personaModels } from './personas.js';
-import { roleModels } from './settings.js';
+import { roleLabels, type Role } from './models.js';
+import type { DownloadStatus, GpuStatus, ModelStatus, ServerState, StatusReport } from './status.js';
+import { personaModels } from '#lib/personas/store.server.js';
+import { roleModels } from './model-settings.server.js';
+import { errorMessage } from '#lib/shared/errors.js';
 
 const baseUrl = process.env.AI_BASE_URL ?? 'http://localai:8080/v1';
 // /readyz や /system は /v1 の外にある
@@ -49,7 +50,7 @@ async function serverState(): Promise<{ server: ServerState; reason?: string }> 
 		const body = await res.json().catch(() => ({}));
 		return { server: 'starting', reason: body.reason };
 	} catch (e) {
-		return { server: 'down', reason: e instanceof Error ? e.message : String(e) };
+		return { server: 'down', reason: errorMessage(e) };
 	}
 }
 

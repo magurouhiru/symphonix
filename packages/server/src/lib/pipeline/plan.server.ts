@@ -1,6 +1,6 @@
-import { chat } from './model.js';
-import { personaFor, withPersona } from './personas.js';
-import type { PlanStep } from '../plan.js';
+import { chat } from '#lib/ai/chat.server.js';
+import { personaFor, withPersona } from '#lib/personas/store.server.js';
+import type { PlanStep } from './types.js';
 
 const SYSTEM_PROMPT = `You are a software planner. The user describes something they want to build.
 Break it into 3 to 5 small implementation steps, in the order they should be built.

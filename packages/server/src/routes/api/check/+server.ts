@@ -1,7 +1,8 @@
 import { json } from '@sveltejs/kit';
-import { checkProject } from '#lib/server/checks.js';
-import { targetFrom } from '#lib/server/target.js';
+import { checkProject } from '#lib/pipeline/checks.server.js';
+import { targetFrom } from '#lib/players/target.server.js';
 import type { RequestHandler } from './$types';
+import { errorMessage } from '#lib/shared/errors.js';
 
 // プロジェクトを自動チェックする（JSON や HTML の参照先、構文、npm install、build、test）
 export const POST: RequestHandler = async ({ request }) => {
@@ -10,6 +11,6 @@ export const POST: RequestHandler = async ({ request }) => {
 	try {
 		return json({ checks: await checkProject(target) });
 	} catch (e) {
-		return json({ error: e instanceof Error ? e.message : String(e) }, { status: 502 });
+		return json({ error: errorMessage(e) }, { status: 502 });
 	}
 };

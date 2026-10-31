@@ -1,5 +1,5 @@
 <script lang="ts">
-	import type { StatusReport } from '#lib/status.js';
+	import type { StatusReport } from '#lib/ai/status.js';
 
 	let report = $state<StatusReport | null>(null);
 	let error = $state('');
@@ -33,9 +33,6 @@
 		return `${(bytes / 1024 ** 3).toFixed(1)} GB`;
 	}
 </script>
-
-<h1>symphonix</h1>
-<p><a href="/">プラン作成に戻る</a> | LocalAI の状態 | <a href="/settings">使うモデル</a></p>
 
 {#if error}
 	<p style="color: red">{error}</p>

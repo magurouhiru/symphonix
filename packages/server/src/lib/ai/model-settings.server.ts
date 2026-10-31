@@ -1,10 +1,7 @@
 // 用途ごとに使うモデルの設定。画面から変えた値を JSON ファイルに保存し、
 // 未設定の用途は環境変数、それもなければ既定のモデルを使う
-import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
-import path from 'node:path';
-import { roles, type Role } from '../roles.js';
-
-const settingsPath = path.resolve(process.env.SETTINGS_PATH ?? 'data/settings.json');
+import { jsonStore } from '#lib/shared/json-store.server.js';
+import { roles, type Role } from './models.js';
 
 const defaults: Record<Role, string> = {
 	chat: process.env.MODEL ?? 'gemma-4-e4b-it-qat-q4_0',
@@ -15,18 +12,8 @@ const defaults: Record<Role, string> = {
 
 type Settings = { models?: Partial<Record<Role, string>> };
 
-let cache: Settings | null = null;
-
-function load(): Settings {
-	if (!cache) {
-		try {
-			cache = JSON.parse(readFileSync(settingsPath, 'utf8'));
-		} catch {
-			cache = {};
-		}
-	}
-	return cache!;
-}
+const file = jsonStore<Settings>(process.env.SETTINGS_PATH ?? 'data/settings.json', { initial: () => ({}) });
+const load = file.get;
 
 export function defaultModel(role: Role): string {
 	return defaults[role];
@@ -46,7 +33,5 @@ export function setRoleModel(role: Role, model: string) {
 	const models = { ...settings.models };
 	if (model.trim()) models[role] = model.trim();
 	else delete models[role];
-	cache = { ...settings, models };
-	mkdirSync(path.dirname(settingsPath), { recursive: true });
-	writeFileSync(settingsPath, JSON.stringify(cache, null, '\t') + '\n');
+	file.set({ ...settings, models });
 }
