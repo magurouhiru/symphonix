@@ -1,4 +1,5 @@
 import { chat } from '#lib/ai/chat.server.js';
+import { translatorFor } from '#lib/ai/translate.server.js';
 import { personaFor, withPersona } from '#lib/personas/store.server.js';
 import { writeFiles, type GeneratedFile, type Target } from '#lib/players/workspace.server.js';
 import { contextText, projectContext } from './context.server.js';
@@ -26,9 +27,14 @@ export async function implementStep(
 	// このステップで書いたファイル。直すときは必ず中身を渡す
 	written: string[] = []
 ): Promise<GeneratedFile[]> {
+	const persona = personaFor('code');
+	// 日本語が苦手なモデルには、依頼、プラン、指摘を英語にして渡す（ファイルの中身は訳さない）
+	const t = translatorFor(persona);
+	request = await t.toModel(request);
+	steps = await t.steps(steps, 'en');
+	feedback = await t.toModel(feedback);
 	const plan = steps.map((s, i) => `${i + 1}. ${s.title}: ${s.description}`).join('\n');
 	const step = steps[index];
-	const persona = personaFor('code');
 	const task = `${request}\n\nCurrent step: ${step.title}\n${step.description}`;
 	const filesText = contextText(await projectContext(target, task, persona.resolvedModel, written));
 	const messages = [

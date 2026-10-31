@@ -5,6 +5,7 @@ import { roles, type Role } from './models.js';
 
 const defaults: Record<Role, string> = {
 	chat: process.env.MODEL ?? 'gemma-4-e4b-it-qat-q4_0',
+	translate: process.env.TRANSLATE_MODEL ?? 'gemma-4-e4b-it-qat-q4_0',
 	image: process.env.IMAGE_MODEL ?? 'sd-1.5-ggml',
 	stt: process.env.STT_MODEL ?? 'whisper-small',
 	tts: process.env.TTS_MODEL ?? 'supertonic-3'

@@ -87,7 +87,12 @@ export function reviewers(): (Persona & { resolvedModel: string })[] {
 function clean(input: Partial<Persona>): Omit<Persona, 'id'> {
 	const name = String(input.name ?? '').trim();
 	if (!name) throw new Error('名前を入力してください');
-	return { name, prompt: String(input.prompt ?? '').trim(), model: String(input.model ?? '').trim() };
+	return {
+		name,
+		prompt: String(input.prompt ?? '').trim(),
+		model: String(input.model ?? '').trim(),
+		translate: input.translate === true
+	};
 }
 
 export function createPersona(input: Partial<Persona>): Persona {

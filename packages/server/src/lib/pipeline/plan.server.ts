@@ -1,4 +1,5 @@
 import { chat } from '#lib/ai/chat.server.js';
+import { translatorFor } from '#lib/ai/translate.server.js';
 import { personaFor, withPersona } from '#lib/personas/store.server.js';
 import type { Target } from '#lib/players/workspace.server.js';
 import { contextText, projectContext } from './context.server.js';
@@ -17,21 +18,23 @@ Plan only the changes; do not plan to rebuild what already exists. Name the file
 // target を渡すと、そのフォルダにある既存のプロジェクトを変える前提でプランを作る
 export async function createPlan(request: string, target?: Target): Promise<PlanStep[]> {
 	const persona = personaFor('plan');
-	const context = target ? await projectContext(target, request, persona.resolvedModel) : null;
+	// 日本語が苦手なモデルには英語で頼み、返ってきたプランを日本語に戻す
+	const t = translatorFor(persona);
+	const want = await t.toModel(request);
+	const context = target ? await projectContext(target, want, persona.resolvedModel) : null;
 	const existing = context && context.paths.length > 0;
 	const messages = [
 		{ role: 'system' as const, content: withPersona(persona.prompt, SYSTEM_PROMPT + (existing ? EXISTING_PROMPT : '')) },
-		{ role: 'user' as const, content: existing ? `${request}
-
-Existing project:
-${contextText(context)}` : request }
+		{ role: 'user' as const, content: existing ? `${want}\n\nExisting project:\n${contextText(context)}` : want }
 	];
 	// 読み取れない返事が来たら、もう一度だけ頼み直す
+	let steps: PlanStep[];
 	try {
-		return parsePlan(await chat(messages, persona.resolvedModel));
+		steps = parsePlan(await chat(messages, persona.resolvedModel));
 	} catch {
-		return parsePlan(await chat(messages, persona.resolvedModel));
+		steps = parsePlan(await chat(messages, persona.resolvedModel));
 	}
+	return t.steps(steps, 'ja');
 }
 
 // 小さいモデルは JSON の前後に文章やコードフェンスを付けがちなので、最初の { から最後の } までを読む
