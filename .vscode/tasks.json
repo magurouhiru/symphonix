@@ -1,0 +1,11 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "symphonix: 拡張機能をビルド",
+			"type": "shell",
+			"command": "pnpm --filter symphonix-vscode check && pnpm --filter symphonix-vscode bundle",
+			"problemMatcher": []
+		}
+	]
+}

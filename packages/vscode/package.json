@@ -1,0 +1,93 @@
+{
+	"name": "symphonix-vscode",
+	"displayName": "symphonix player",
+	"private": true,
+	"version": "0.0.1",
+	"type": "module",
+	"description": "VS Code で開いているフォルダを symphonix のプレイヤーにする拡張機能",
+	"publisher": "magurouhiru",
+	"license": "UNLICENSED",
+	"engines": {
+		"vscode": "^1.90.0"
+	},
+	"categories": [
+		"Other"
+	],
+	"extensionKind": [
+		"workspace"
+	],
+	"main": "./dist/extension.cjs",
+	"activationEvents": [
+		"onStartupFinished"
+	],
+	"contributes": {
+		"commands": [
+			{
+				"command": "symphonix.start",
+				"title": "プレイヤーを起動",
+				"category": "symphonix"
+			},
+			{
+				"command": "symphonix.stop",
+				"title": "プレイヤーを停止",
+				"category": "symphonix"
+			},
+			{
+				"command": "symphonix.showLog",
+				"title": "ログを表示",
+				"category": "symphonix"
+			}
+		],
+		"configuration": {
+			"title": "symphonix",
+			"properties": {
+				"symphonix.server": {
+					"type": "string",
+					"default": "http://host.docker.internal:7373",
+					"description": "symphonix の URL。symphonix と同じコンテナで動かすときは http://localhost:7373"
+				},
+				"symphonix.root": {
+					"type": "string",
+					"default": "",
+					"description": "作業フォルダ。ワークスペースのフォルダからの相対パス。空ならワークスペースのフォルダそのもの"
+				},
+				"symphonix.name": {
+					"type": "string",
+					"default": "",
+					"description": "symphonix の画面に出す名前。空なら作業フォルダの名前"
+				},
+				"symphonix.allow": {
+					"type": "array",
+					"items": {
+						"type": "string"
+					},
+					"default": [
+						"node",
+						"npm",
+						"python3"
+					],
+					"description": "プレイヤーが実行してよいコマンド"
+				},
+				"symphonix.autoStart": {
+					"type": "boolean",
+					"default": false,
+					"description": "VS Code を開いたら自動でプレイヤーを起動する"
+				}
+			}
+		}
+	},
+	"scripts": {
+		"build": "pnpm check && pnpm bundle && pnpm package",
+		"check": "tsc -b ../player && tsc --noEmit",
+		"bundle": "esbuild src/extension.ts --bundle --platform=node --format=cjs --target=node18 --external:vscode --outfile=dist/extension.cjs --log-level=warning",
+		"package": "vsce package --no-dependencies --allow-missing-repository --skip-license --out dist/symphonix-player.vsix"
+	},
+	"devDependencies": {
+		"@symphonix/player": "workspace:*",
+		"@types/node": "^22",
+		"@types/vscode": "~1.90.0",
+		"@vscode/vsce": "^4.1.0",
+		"esbuild": "^0.28.2",
+		"typescript": "^6.0.3"
+	}
+}

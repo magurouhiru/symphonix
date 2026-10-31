@@ -5,6 +5,7 @@
 	import PlayerPicker from '#lib/players/PlayerPicker.svelte';
 	import { postJson } from '#lib/shared/api.js';
 	import { errorMessage } from '#lib/shared/errors.js';
+	import { downloadHref, ROOT_PROJECT } from '#lib/shared/projects.js';
 	import { page } from '$app/state';
 	import type { PlayerInfo } from '@symphonix/protocol';
 
@@ -40,18 +41,32 @@
 	let playerId = $state('');
 	let player = $state<PlayerInfo>();
 	// プロジェクト一覧の「改修する」から来たら、そのフォルダを選んでおく
-	let folder = $state(page.url.searchParams.get('folder') ?? '');
+	const folderParam = page.url.searchParams.get('folder') ?? '';
+	// フォルダを作らず、作業フォルダの直下で作業する
+	let atRoot = $state(folderParam === ROOT_PROJECT);
+	let folder = $state(folderParam === ROOT_PROJECT ? '' : folderParam);
+	const project = $derived(atRoot ? ROOT_PROJECT : folder);
 
 	// 作業フォルダにある既存のプロジェクト。同じ名前のフォルダを選ぶと、それを改修する
 	let projects = $state<{ name: string; files: number }[]>([]);
+	let rootFiles = $state(0);
 	$effect(() => {
 		if (!playerId) return;
 		fetch(`/api/projects?player=${encodeURIComponent(playerId)}`)
 			.then((r) => r.json())
-			.then((data) => (projects = data.projects ?? []))
+			.then((data) => {
+				projects = data.projects ?? [];
+				rootFiles = data.rootFiles ?? 0;
+			})
 			.catch(() => (projects = []));
 	});
-	const existing = $derived(projects.find((p) => p.name === folder.trim() && p.files > 0));
+	const existing = $derived(
+		atRoot
+			? rootFiles > 0
+				? { name: ROOT_PROJECT, files: rootFiles }
+				: undefined
+			: projects.find((p) => p.name === folder.trim() && p.files > 0)
+	);
 
 	const pipeline = new PipelineRun();
 
@@ -61,7 +76,7 @@
 			steps,
 			player: playerId,
 			playerRoot: player?.root ?? '',
-			folder,
+			folder: project,
 			hasReviewers: reviewerNames.length > 0
 		});
 	}
@@ -99,13 +114,14 @@
 
 <p>
 	作る場所: <PlayerPicker bind:selected={playerId} bind:player />
-	/ <input bind:value={folder} list="projects" size="20" placeholder="フォルダ名（空なら日時）" disabled={pipeline.running} />
+	/ <input bind:value={folder} list="projects" size="20" placeholder="フォルダ名（空なら日時）" disabled={pipeline.running || atRoot} />
+	<label><input type="checkbox" bind:checked={atRoot} disabled={pipeline.running} /> フォルダを作らず直下で作業する</label>
 	<datalist id="projects">
 		{#each projects as p}<option value={p.name}></option>{/each}
 	</datalist>
 	{#if existing}
-		<small>既存のフォルダ（{existing.files} ファイル）を改修します</small>
-	{:else if folder.trim()}
+		<small>既存の{atRoot ? '作業フォルダ' : 'フォルダ'}（{existing.files} ファイル）を改修します</small>
+	{:else if atRoot || folder.trim()}
 		<small>新しく作ります</small>
 	{/if}
 </p>
@@ -150,7 +166,7 @@
 	{#if pipeline.projectPath}
 		<p>書き出し先: <code>{pipeline.projectPath}</code></p>
 		{#if !pipeline.running && pipeline.project}
-			<p><a href="/api/projects/{encodeURIComponent(pipeline.project)}/download?player={encodeURIComponent(playerId)}" download>ZIP でダウンロード</a></p>
+			<p><a href={downloadHref(playerId, pipeline.project)} download>ZIP でダウンロード</a></p>
 		{/if}
 	{/if}
 	<ol>

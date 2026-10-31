@@ -1,12 +1,12 @@
 #!/usr/bin/env node
 // symphonix のプレイヤーを起動する。
-//   symphonix-player --server http://localhost:5173 --root ./workspace [--name 名前] [--allow node,npm,python3]
+//   symphonix-player --server http://localhost:7373 --root ./workspace [--name 名前] [--allow node,npm,python3]
 import { parseArgs } from 'node:util';
 import { createPlayer } from './player.js';
 
 const { values } = parseArgs({
 	options: {
-		server: { type: 'string', default: process.env.SYMPHONIX_URL ?? 'http://localhost:5173' },
+		server: { type: 'string', default: process.env.SYMPHONIX_URL ?? 'http://localhost:7373' },
 		root: { type: 'string', default: '.' },
 		name: { type: 'string' },
 		allow: { type: 'string' }

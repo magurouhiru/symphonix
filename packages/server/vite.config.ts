@@ -14,7 +14,12 @@ export default defineConfig({
 		})
 	],
 	server: {
+		// Vite の既定の 5173 は、作ったアプリの開発サーバーとぶつかりやすいので変える。
+		// 使われていたら別のポートに逃げず、起動に失敗させる（プレイヤーの接続先がずれないように）
+		port: 7373,
+		strictPort: true,
 		// 別の devcontainer のプレイヤーが host.docker.internal でつないでくるのを許可する
 		allowedHosts: ['host.docker.internal']
-	}
+	},
+	preview: { port: 7373, strictPort: true }
 });

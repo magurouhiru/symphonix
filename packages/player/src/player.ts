@@ -21,7 +21,7 @@ const MAX_OUTPUT = 8000;
 const ignored = new Set<string>(IGNORED_DIRS);
 
 export type PlayerOptions = {
-	// symphonix の URL（例: http://localhost:5173）
+	// symphonix の URL（例: http://localhost:7373）
 	server: string;
 	// 作業フォルダ。この外は読み書きしない
 	root: string;
@@ -30,7 +30,11 @@ export type PlayerOptions = {
 	// 実行してよいコマンド
 	allow?: string[];
 	log?: (message: string) => void;
+	// つながった・切れたときに呼ぶ（VS Code のステータスバーなどに出す用）
+	onStatus?: (status: PlayerStatus) => void;
 };
+
+export type PlayerStatus = 'connecting' | 'connected' | 'stopped';
 
 type Handlers = { [M in Method]: (params: Methods[M]['params']) => Promise<Methods[M]['result']> };
 
@@ -130,17 +134,40 @@ export function createHandlers(rootDir: string, allow: readonly string[]): Handl
 	};
 }
 
-export function createPlayer({ server, root, name, allow = [...DEFAULT_ALLOW], log = console.log }: PlayerOptions) {
+export function createPlayer({
+	server,
+	root,
+	name,
+	allow = [...DEFAULT_ALLOW],
+	log = console.log,
+	onStatus = () => {}
+}: PlayerOptions) {
 	const base = server.replace(/\/$/, '');
 	const rootDir = path.resolve(root);
 	const handlers = createHandlers(rootDir, allow);
-	let stopped = false;
+	let stopped = true;
 	let id = '';
+	// 止めるときに待ち中の通信を打ち切る
+	let abort = new AbortController();
+	let running: Promise<void> | undefined;
+	let status: PlayerStatus = 'stopped';
+	function setStatus(next: PlayerStatus) {
+		if (next === status) return;
+		status = next;
+		onStatus(next);
+	}
+	function wait(ms: number) {
+		return new Promise<void>((resolve) => {
+			const timer = setTimeout(resolve, ms);
+			abort.signal.addEventListener('abort', () => (clearTimeout(timer), resolve()), { once: true });
+		});
+	}
 
 	async function api<T>(pathname: string, init?: RequestInit): Promise<T | null> {
 		const res = await fetch(`${base}${pathname}`, {
 			...init,
-			headers: { 'Content-Type': 'application/json' }
+			headers: { 'Content-Type': 'application/json' },
+			signal: abort.signal
 		});
 		if (res.status === 204) return null;
 		const data = await res.json().catch(() => ({}));
@@ -175,27 +202,39 @@ export function createPlayer({ server, root, name, allow = [...DEFAULT_ALLOW], l
 		while (!stopped) {
 			try {
 				if (!id) await connect();
+				setStatus('connected');
 				const job = await api<Job>(playerApi.next(id));
 				if (!job) continue;
 				log(describe(job));
 				const reply = await handle(job);
 				await api(playerApi.result(id), { method: 'POST', body: JSON.stringify(reply) });
 			} catch (e) {
-				if (e instanceof HttpError && e.status === 404) id = ''; // symphonix が再起動した
 				if (stopped) break;
+				if (e instanceof HttpError && e.status === 404) id = ''; // symphonix が再起動した
+				setStatus('connecting');
 				log(`接続できません（${e instanceof Error ? e.message : e}）。3 秒後にやり直します`);
-				await new Promise((r) => setTimeout(r, 3000));
+				await wait(3000);
 			}
 		}
+		id = '';
+		setStatus('stopped');
 	}
 
 	return {
+		// 動いている間は何度呼んでも 1 つだけ
 		start: () => {
+			if (!stopped && running) return running;
 			stopped = false;
-			return loop();
+			abort = new AbortController();
+			setStatus('connecting');
+			running = loop();
+			return running;
 		},
-		stop: () => {
+		// 待ち中の通信も打ち切って止める。止まりきるまで待てる
+		stop: async () => {
 			stopped = true;
+			abort.abort();
+			await running;
 		}
 	};
 }

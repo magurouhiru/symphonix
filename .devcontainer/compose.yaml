@@ -3,9 +3,9 @@ services:
     image: mcr.microsoft.com/devcontainers/typescript-node:22
     container_name: symphonix-dev
     command: sleep infinity
-    # 別の devcontainer のプレイヤーから http://host.docker.internal:5173 でつなげるよう、ポートを公開する
+    # 別の devcontainer のプレイヤーから http://host.docker.internal:7373 でつなげるよう、ポートを公開する
     ports:
-      - 5173:5173
+      - 7373:7373
     volumes:
       - ..:/workspaces/symphonix
       # node_modules はホストと共有せずボリュームに置く（Windows とのファイル共有は遅いため）
@@ -13,6 +13,7 @@ services:
       - server_node_modules:/workspaces/symphonix/packages/server/node_modules
       - player_node_modules:/workspaces/symphonix/packages/player/node_modules
       - protocol_node_modules:/workspaces/symphonix/packages/protocol/node_modules
+      - vscode_node_modules:/workspaces/symphonix/packages/vscode/node_modules
     environment:
       # pnpm のストアも node_modules と同じボリュームに置き、ハードリンクで速く入れる
       npm_config_store_dir: /workspaces/symphonix/node_modules/.pnpm-store
@@ -51,5 +52,6 @@ volumes:
   server_node_modules:
   player_node_modules:
   protocol_node_modules:
+  vscode_node_modules:
   models:
   backends:
