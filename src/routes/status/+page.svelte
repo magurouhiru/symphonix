@@ -35,7 +35,7 @@
 </script>
 
 <h1>symphonix</h1>
-<p><a href="/">プラン作成に戻る</a> | LocalAI の状態</p>
+<p><a href="/">プラン作成に戻る</a> | LocalAI の状態 | <a href="/settings">使うモデル</a></p>
 
 {#if error}
 	<p style="color: red">{error}</p>
