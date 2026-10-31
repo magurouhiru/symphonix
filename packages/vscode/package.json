@@ -43,8 +43,8 @@
 			"properties": {
 				"symphonix.server": {
 					"type": "string",
-					"default": "http://host.docker.internal:5173",
-					"description": "symphonix の URL。symphonix と同じコンテナで動かすときは http://localhost:5173"
+					"default": "http://host.docker.internal:7373",
+					"description": "symphonix の URL。symphonix と同じコンテナで動かすときは http://localhost:7373"
 				},
 				"symphonix.root": {
 					"type": "string",

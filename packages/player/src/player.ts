@@ -21,7 +21,7 @@ const MAX_OUTPUT = 8000;
 const ignored = new Set<string>(IGNORED_DIRS);
 
 export type PlayerOptions = {
-	// symphonix の URL（例: http://localhost:5173）
+	// symphonix の URL（例: http://localhost:7373）
 	server: string;
 	// 作業フォルダ。この外は読み書きしない
 	root: string;

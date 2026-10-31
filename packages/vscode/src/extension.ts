@@ -45,7 +45,7 @@ export function activate(context: vscode.ExtensionContext) {
 		const config = vscode.workspace.getConfiguration('symphonix', folder);
 		const log = (message: string) => output.appendLine(`[${new Date().toLocaleTimeString()}] ${message}`);
 		player = createPlayer({
-			server: config.get('server', 'http://host.docker.internal:5173'),
+			server: config.get('server', 'http://host.docker.internal:7373'),
 			root: path.resolve(folder.uri.fsPath, config.get('root', '')),
 			name: config.get('name') || undefined,
 			allow: config.get<string[]>('allow'),

@@ -12,6 +12,13 @@ export function newProjectName(): string {
 	return new Date().toISOString().replace(/[-:]/g, '').replace('T', '-').slice(0, 15);
 }
 
+// プレイヤーを入れるために取ってきたファイル（拡張機能の .vsix と 1 ファイルのプレイヤー）。
+// 作業フォルダの直下に置かれがちなので、プロジェクトのファイルとしては扱わない
+export function isPlayerFile(rel: string): boolean {
+	const name = path.posix.basename(rel);
+	return name.endsWith('.vsix') || name === 'symphonix-player.js';
+}
+
 // フォルダ名やファイルパスがプロジェクトの外を指さないようにする（プレイヤー側でも作業フォルダの外は拒否する）
 function inside(base: string, relative: string): string {
 	const joined = path.posix.normalize(path.posix.join(base, relative.replace(/\\/g, '/')));
@@ -47,7 +54,9 @@ export async function projectEntries(target: Target): Promise<{ path: string; si
 	const project = checkProjectName(target.project);
 	try {
 		const { entries } = await callPlayer(target.player, 'list', { dir: project });
-		return entries.filter((e) => e.type === 'file').map((e) => ({ path: e.path, size: e.size ?? 0 }));
+		return entries
+			.filter((e) => e.type === 'file' && !isPlayerFile(e.path))
+			.map((e) => ({ path: e.path, size: e.size ?? 0 }));
 	} catch (e) {
 		// まだ何も書いていないプロジェクト
 		if (e instanceof Error && /ENOENT/.test(e.message)) return [];
@@ -86,6 +95,7 @@ export async function listProjects(player: string): Promise<{ projects: ProjectS
 	const projects = new Map<string, ProjectSummary>();
 	let rootFiles = 0;
 	for (const e of entries) {
+		if (e.type === 'file' && isPlayerFile(e.path)) continue;
 		if (e.type === 'file') rootFiles++;
 		const [name, ...rest] = e.path.split('/');
 		const p = projects.get(name) ?? { name, files: 0, updatedAt: new Date(0).toISOString() };

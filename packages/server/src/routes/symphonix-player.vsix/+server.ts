@@ -4,7 +4,7 @@ import { error } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 
 // プレイヤーの VS Code 拡張機能を配る。別の devcontainer の VS Code のターミナルで
-//   curl -fO http://<symphonix>:5173/symphonix-player.vsix && code --install-extension symphonix-player.vsix
+//   curl -fO http://<symphonix>:7373/symphonix-player.vsix && code --install-extension symphonix-player.vsix
 // とすれば、そのコンテナに入る
 const vsixPath = path.resolve(process.env.PLAYER_VSIX ?? '../vscode/dist/symphonix-player.vsix');
 
