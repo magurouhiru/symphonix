@@ -1,6 +1,8 @@
 <script lang="ts">
 	import { MAX_REVISIONS, taskLabels, tasks, type Persona, type Review, type Task } from '#lib/personas.js';
+	import ClientPicker from '#lib/ClientPicker.svelte';
 	import type { CheckResult } from '#lib/checks.js';
+	import type { ClientInfo } from '#lib/clients.js';
 	import type { PlanStep } from '#lib/plan.js';
 
 	// 作業ごとの担当ペルソナ（表示用）
@@ -36,6 +38,10 @@
 	// rounds は実装 1 回ごとの自動チェックとレビューの結果。files はこのステップで書いたファイル（最新の内容）
 	type Round = { checks: CheckResult[]; reviews: Review[] };
 	type StepResult = { status: StepStatus; files: GeneratedFile[]; rounds: Round[]; error?: string };
+	// どのクライアントの作業フォルダの、どのフォルダに作るか
+	let clientId = $state('');
+	let client = $state<ClientInfo>();
+	let folder = $state('');
 	let project = $state('');
 	let projectPath = $state('');
 	let results = $state<StepResult[]>([]);
@@ -48,7 +54,6 @@
 			body: JSON.stringify(body)
 		});
 		const data = await res.json();
-		if (data.project) project = data.project;
 		if (!res.ok) throw new Error(data.error);
 		return data;
 	}
@@ -60,14 +65,13 @@
 		let feedback = '';
 		for (let attempt = 0; attempt <= MAX_REVISIONS; attempt++) {
 			result.status = attempt === 0 ? 'running' : 'revising';
-			const data = await post('/api/run', { request: want, steps, index: i, project, feedback });
-			projectPath = data.dir;
+			const data = await post('/api/run', { request: want, steps, index: i, client: clientId, project, feedback });
 			const byPath = new Map(result.files.map((f) => [f.path, f]));
 			for (const f of data.files as GeneratedFile[]) byPath.set(f.path, f);
 			result.files = [...byPath.values()];
 
 			result.status = 'checking';
-			const { checks } = (await post('/api/check', { project })) as { checks: CheckResult[] };
+			const { checks } = (await post('/api/check', { client: clientId, project })) as { checks: CheckResult[] };
 			const round: Round = { checks, reviews: [] };
 			result.rounds.push(round);
 			const failed = checks.filter((c) => !c.ok);
@@ -78,6 +82,7 @@
 					request: want,
 					steps,
 					index: i,
+					client: clientId,
 					project,
 					paths: result.files.map((f) => f.path)
 				})) as { reviews: Review[] };
@@ -103,8 +108,9 @@
 	async function run(from = 0) {
 		running = true;
 		if (from === 0) {
-			project = '';
-			projectPath = '';
+			// フォルダ名を入れなければ日時にする
+			project = folder.trim() || new Date().toISOString().replace(/[-:]/g, '').replace('T', '-').slice(0, 15);
+			projectPath = `${client?.root ?? ''}/${project}`;
 			results = steps.map(() => ({ status: 'pending', files: [], rounds: [] }));
 		}
 		for (let i = from; i < steps.length; i++) {
@@ -203,7 +209,11 @@
 		{/each}
 	</ol>
 	<button onclick={() => steps.push({ title: '新しいステップ', description: '' })} disabled={running}>ステップを追加</button>
-	<button onclick={() => run()} disabled={running}>{running ? '実装中…' : 'このプランで実装する'}</button>
+	<p>
+		作る場所: <ClientPicker bind:selected={clientId} bind:client />
+		/ <input bind:value={folder} size="20" placeholder="フォルダ名（空なら日時）" disabled={running} />
+	</p>
+	<button onclick={() => run()} disabled={running || !clientId}>{running ? '実装中…' : 'このプランで実装する'}</button>
 {/if}
 
 {#if results.length}
@@ -211,7 +221,7 @@
 	{#if projectPath}
 		<p>書き出し先: <code>{projectPath}</code></p>
 		{#if !running && project}
-			<p><a href="/api/projects/{encodeURIComponent(project)}/download" download>ZIP でダウンロード</a></p>
+			<p><a href="/api/projects/{encodeURIComponent(project)}/download?client={encodeURIComponent(clientId)}" download>ZIP でダウンロード</a></p>
 		{/if}
 	{/if}
 	<ol>

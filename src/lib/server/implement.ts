@@ -1,6 +1,6 @@
 import { chat } from './model.js';
 import { personaFor, withPersona } from './personas.js';
-import { readProject, writeFiles, type GeneratedFile } from './workspace.js';
+import { readProject, writeFiles, type GeneratedFile, type Target } from './workspace.js';
 import type { PlanStep } from '../plan.js';
 
 // コードを JSON に入れると引用符や改行のエスケープを間違えやすいので、ファイルは区切り行で囲んで返させる
@@ -17,13 +17,13 @@ Do not write anything outside these blocks.`;
 const ATTEMPTS = 2;
 
 export async function implementStep(
-	project: string,
+	target: Target,
 	request: string,
 	steps: PlanStep[],
 	index: number,
 	feedback = ''
 ): Promise<GeneratedFile[]> {
-	const existing = await readProject(project);
+	const existing = await readProject(target);
 	const plan = steps.map((s, i) => `${i + 1}. ${s.title}: ${s.description}`).join('\n');
 	const filesText = existing.length
 		? existing.map((f) => `=== FILE: ${f.path} ===\n${f.content}\n=== END FILE ===`).join('\n')
@@ -44,7 +44,7 @@ export async function implementStep(
 		const content = await chat(messages, persona.resolvedModel);
 		try {
 			const files = parseFiles(content);
-			await writeFiles(project, files);
+			await writeFiles(target, files);
 			return files;
 		} catch (e) {
 			lastError = e;

@@ -1,22 +1,24 @@
 import { json } from '@sveltejs/kit';
 import { implementStep } from '#lib/server/implement.js';
-import { newProjectName, projectDir } from '#lib/server/workspace.js';
+import { targetFrom } from '#lib/server/target.js';
+import { checkProjectName } from '#lib/server/workspace.js';
 import type { RequestHandler } from './$types';
 
-// プランの 1 ステップを実装して作業フォルダに書き出す。project が無ければ新しく作る
+// プランの 1 ステップを実装し、クライアントの作業フォルダの project に書き出す
 export const POST: RequestHandler = async ({ request }) => {
 	const body = await request.json();
 	const { request: want, steps, index } = body;
-	if (typeof want !== 'string' || !Array.isArray(steps) || typeof index !== 'number' || !steps[index]) {
-		return json({ error: 'request, steps and index are required' }, { status: 400 });
+	const target = targetFrom(body);
+	if (typeof want !== 'string' || !Array.isArray(steps) || typeof index !== 'number' || !steps[index] || !target) {
+		return json({ error: 'request, steps, index, client and project are required' }, { status: 400 });
 	}
-	const project = typeof body.project === 'string' && body.project ? body.project : newProjectName();
 	try {
-		// feedback はレビュアーの指摘。あれば同じステップを直させる
+		checkProjectName(target.project);
+		// feedback は自動チェックやレビュアーの指摘。あれば同じステップを直させる
 		const feedback = typeof body.feedback === 'string' ? body.feedback : '';
-		const files = await implementStep(project, want, steps, index, feedback);
-		return json({ project, dir: projectDir(project), files });
+		const files = await implementStep(target, want, steps, index, feedback);
+		return json({ files });
 	} catch (e) {
-		return json({ project, error: e instanceof Error ? e.message : String(e) }, { status: 502 });
+		return json({ error: e instanceof Error ? e.message : String(e) }, { status: 502 });
 	}
 };

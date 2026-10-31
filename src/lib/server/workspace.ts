@@ -1,87 +1,108 @@
-import { mkdir, readdir, readFile, stat, writeFile } from 'node:fs/promises';
+// 生成したプロジェクトの読み書き。ファイルは symphonix ではなくクライアントの作業フォルダにあり、
+// すべてクライアントに頼んで行う。project は作業フォルダの中のフォルダ名
 import path from 'node:path';
-
-const root = path.resolve(process.env.WORKSPACE_DIR ?? 'workspace');
+import { callClient } from './clients.js';
 
 export type GeneratedFile = { path: string; content: string };
+export type Target = { client: string; project: string };
+export type ProjectSummary = { name: string; files: number; updatedAt: string };
+type Entry = { path: string; type: 'file' | 'dir'; mtimeMs: number };
 
 export function newProjectName(): string {
 	return new Date().toISOString().replace(/[-:]/g, '').replace('T', '-').slice(0, 15);
 }
 
-// プロジェクト名やファイルパスが作業フォルダの外を指さないようにする
-function resolveInside(base: string, relative: string): string {
-	const full = path.resolve(base, relative);
-	if (full !== base && !full.startsWith(base + path.sep)) {
-		throw new Error(`作業フォルダの外には書き込めません: ${relative}`);
+// フォルダ名やファイルパスがプロジェクトの外を指さないようにする（クライアント側でも作業フォルダの外は拒否する）
+function inside(base: string, relative: string): string {
+	const joined = path.posix.normalize(path.posix.join(base, relative.replace(/\\/g, '/')));
+	if (joined === base || !joined.startsWith(base + '/') || path.posix.isAbsolute(relative)) {
+		throw new Error(`プロジェクトの外には書き込めません: ${relative}`);
 	}
-	return full;
+	return joined;
 }
 
-export function projectDir(project: string): string {
-	const dir = resolveInside(root, project);
-	if (dir === root) throw new Error(`プロジェクト名が不正です: ${project}`);
-	return dir;
+export function checkProjectName(project: string): string {
+	const name = project.trim();
+	if (!name || name.includes('/') || name.includes('\\') || name === '.' || name === '..') {
+		throw new Error(`フォルダ名が不正です: ${project}`);
+	}
+	return name;
 }
 
-export async function writeFiles(project: string, files: GeneratedFile[]): Promise<string[]> {
-	const dir = projectDir(project);
+export async function writeFiles(target: Target, files: GeneratedFile[]): Promise<string[]> {
+	const project = checkProjectName(target.project);
 	// 1 つでも不正なパスがあれば何も書かない
-	const targets = files.map((file) => ({ full: resolveInside(dir, file.path), content: file.content }));
-	const written: string[] = [];
+	const targets = files.map((file) => ({ full: inside(project, file.path), content: file.content }));
 	for (const { full, content } of targets) {
-		await mkdir(path.dirname(full), { recursive: true });
-		await writeFile(full, content);
-		written.push(path.relative(dir, full));
+		await callClient(target.client, 'write', { path: full, content });
 	}
-	return written;
+	return targets.map(({ full }) => path.posix.relative(project, full));
 }
 
-// 自動チェックで npm install やビルドをすると増えるフォルダ。モデルに見せたり ZIP に入れたりしない
-const IGNORED = new Set(['node_modules', '.git', 'dist']);
-
-// プロジェクト内のファイルを、プロジェクトからの相対パス（/ 区切り）で返す
-export async function projectFiles(dir: string): Promise<string[]> {
-	const entries = await readdir(dir, { recursive: true, withFileTypes: true }).catch(() => []);
-	return entries
-		.filter((entry) => entry.isFile())
-		.map((entry) => path.relative(dir, path.join(entry.parentPath, entry.name)).split(path.sep).join('/'))
-		.filter((rel) => !rel.split('/').some((part) => IGNORED.has(part)));
+// プロジェクト内のファイルを、プロジェクトからの相対パスで返す（node_modules などはクライアントが除く）
+export async function projectFiles(target: Target): Promise<string[]> {
+	const project = checkProjectName(target.project);
+	try {
+		const { entries } = await callClient<{ entries: Entry[] }>(target.client, 'list', { dir: project });
+		return entries.filter((e) => e.type === 'file').map((e) => e.path);
+	} catch (e) {
+		// まだ何も書いていないプロジェクト
+		if (e instanceof Error && /ENOENT/.test(e.message)) return [];
+		throw e;
+	}
 }
 
-export async function readProject(project: string): Promise<GeneratedFile[]> {
-	const dir = projectDir(project);
+async function readBytes(target: Target, rel: string): Promise<Buffer> {
+	const { base64 } = await callClient<{ base64: string }>(target.client, 'read', {
+		path: inside(checkProjectName(target.project), rel)
+	});
+	return Buffer.from(base64, 'base64');
+}
+
+export async function readText(target: Target, rel: string): Promise<string> {
+	return (await readBytes(target, rel)).toString('utf8');
+}
+
+export async function readProject(target: Target): Promise<GeneratedFile[]> {
 	const files: GeneratedFile[] = [];
-	for (const rel of await projectFiles(dir)) {
-		files.push({ path: rel, content: await readFile(path.join(dir, rel), 'utf8') });
+	for (const rel of await projectFiles(target)) {
+		files.push({ path: rel, content: await readText(target, rel) });
 	}
 	return files;
 }
 
-export type ProjectSummary = { name: string; files: number; updatedAt: string };
-
-// 作業フォルダにあるプロジェクトを新しい順に返す
-export async function listProjects(): Promise<ProjectSummary[]> {
-	const entries = await readdir(root, { withFileTypes: true }).catch(() => []);
-	const projects: ProjectSummary[] = [];
-	for (const entry of entries) {
-		if (!entry.isDirectory()) continue;
-		const dir = path.join(root, entry.name);
-		const files = await projectFiles(dir);
-		const times = await Promise.all(files.map((rel) => stat(path.join(dir, rel))));
-		const updated = Math.max((await stat(dir)).mtimeMs, ...times.map((t) => t.mtimeMs));
-		projects.push({ name: entry.name, files: files.length, updatedAt: new Date(updated).toISOString() });
+// クライアントの作業フォルダにあるプロジェクト（直下のフォルダ）を新しい順に返す
+export async function listProjects(client: string): Promise<ProjectSummary[]> {
+	const { entries } = await callClient<{ entries: Entry[] }>(client, 'list', { dir: '' });
+	const projects = new Map<string, ProjectSummary>();
+	for (const e of entries) {
+		const [name, ...rest] = e.path.split('/');
+		const p = projects.get(name) ?? { name, files: 0, updatedAt: new Date(0).toISOString() };
+		if (rest.length && e.type === 'file') p.files++;
+		if (e.type === 'dir' || rest.length) {
+			const t = new Date(e.mtimeMs).toISOString();
+			if (t > p.updatedAt) p.updatedAt = t;
+			projects.set(name, p);
+		}
 	}
-	return projects.sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
+	return [...projects.values()].sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
 }
 
 // ZIP にするため、プロジェクトのファイルをバイト列のまま読む
-export async function readProjectBytes(project: string): Promise<Record<string, Uint8Array>> {
-	const dir = projectDir(project);
-	await stat(dir);
+export async function readProjectBytes(target: Target): Promise<Record<string, Uint8Array>> {
 	const files: Record<string, Uint8Array> = {};
-	for (const rel of await projectFiles(dir)) {
-		files[rel] = await readFile(path.join(dir, rel));
+	for (const rel of await projectFiles(target)) {
+		files[rel] = await readBytes(target, rel);
 	}
 	return files;
+}
+
+// プロジェクトのフォルダでコマンドを実行する
+export function runInProject(target: Target, command: string[], timeoutMs = 120_000) {
+	return callClient<{ code: number; output: string; timedOut: boolean }>(
+		target.client,
+		'run',
+		{ cwd: checkProjectName(target.project), command, timeoutMs },
+		timeoutMs + 15_000
+	);
 }

@@ -1,13 +1,22 @@
 <script lang="ts">
+	import ClientPicker from '#lib/ClientPicker.svelte';
+
 	type ProjectSummary = { name: string; files: number; updatedAt: string };
 
+	let clientId = $state('');
 	let projects = $state<ProjectSummary[] | null>(null);
 	let error = $state('');
 
 	$effect(() => {
-		fetch('/api/projects')
+		if (!clientId) return;
+		projects = null;
+		error = '';
+		fetch(`/api/projects?client=${encodeURIComponent(clientId)}`)
 			.then((r) => r.json())
-			.then((data) => (projects = data.projects))
+			.then((data) => {
+				if (data.error) error = data.error;
+				else projects = data.projects;
+			})
 			.catch((e) => (error = String(e)));
 	});
 </script>
@@ -15,10 +24,13 @@
 <h1>symphonix</h1>
 <p><a href="/">プラン作成に戻る</a> | 成果物 | <a href="/personas">ペルソナ</a> | <a href="/status">LocalAI の状態</a> | <a href="/settings">使うモデル</a></p>
 
-<p>これまでに作ったものを ZIP でダウンロードできます。</p>
+<p>クライアントの作業フォルダにあるものを ZIP でダウンロードできます。</p>
+<p>クライアント: <ClientPicker bind:selected={clientId} /></p>
 
 {#if error}
 	<p style="color: red">{error}</p>
+{:else if !clientId}
+	<p></p>
 {:else if !projects}
 	<p>読み込み中…</p>
 {:else if projects.length === 0}
@@ -36,7 +48,7 @@
 					<td>{new Date(project.updatedAt).toLocaleString()}</td>
 					<td>
 						{#if project.files}
-							<a href="/api/projects/{encodeURIComponent(project.name)}/download" download>ZIP でダウンロード</a>
+							<a href="/api/projects/{encodeURIComponent(project.name)}/download?client={encodeURIComponent(clientId)}" download>ZIP でダウンロード</a>
 						{/if}
 					</td>
 				</tr>

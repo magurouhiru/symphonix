@@ -1,7 +1,7 @@
 // 実装したステップを、割り当てたレビュアーが 1 人ずつ確認する
 import { chat } from './model.js';
 import { reviewers, withPersona } from './personas.js';
-import { readProject } from './workspace.js';
+import { readProject, type Target } from './workspace.js';
 import type { Review } from '../personas.js';
 import type { PlanStep } from '../plan.js';
 
@@ -18,13 +18,13 @@ After that, briefly explain why.
 Write the explanation in the same language as the user's request.`;
 
 export async function reviewStep(
-	project: string,
+	target: Target,
 	request: string,
 	steps: PlanStep[],
 	index: number,
 	paths: string[]
 ): Promise<Review[]> {
-	const files = (await readProject(project)).filter((f) => paths.includes(f.path));
+	const files = (await readProject(target)).filter((f) => paths.includes(f.path));
 	const plan = steps.map((s, i) => `${i + 1}. ${s.title}: ${s.description}`).join('\n');
 	const filesText = files.map((f) => `=== FILE: ${f.path} ===\n${numbered(f.content)}\n=== END FILE ===`).join('\n');
 	const step = steps[index];
