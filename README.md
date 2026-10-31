@@ -34,7 +34,7 @@ symphonix はファイルを直接触らず、生成したファイルの読み�
    ```
    別の場所（別の devcontainer など）で作業したいときは、symphonix が配っている 1 ファイルのプレイヤーを取ってきて実行します。Node.js 18 以上があれば、ほかに何も要りません。
    ```sh
-   curl -O http://host.docker.internal:5173/symphonix-player.js
+   curl -fO http://host.docker.internal:5173/symphonix-player.js
    node symphonix-player.js --server http://host.docker.internal:5173 --root <作業フォルダ>
    ```
    symphonix のコンテナはポート 5173 を公開しているので、別のコンテナからは `host.docker.internal:5173` で届きます（Windows からは今まで通り `localhost:5173`）。

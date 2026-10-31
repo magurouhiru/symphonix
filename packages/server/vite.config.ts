@@ -12,5 +12,9 @@ export default defineConfig({
 			},
 			adapter: adapter()
 		})
-	]
+	],
+	server: {
+		// 別の devcontainer のプレイヤーが host.docker.internal でつないでくるのを許可する
+		allowedHosts: ['host.docker.internal']
+	}
 });

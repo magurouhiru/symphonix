@@ -4,7 +4,7 @@ import { error } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 
 // 1 ファイルにまとめたプレイヤーを配る。別の環境では
-//   curl -O http://<symphonix>:5173/symphonix-player.js && node symphonix-player.js --server http://<symphonix>:5173 --root .
+//   curl -fO http://<symphonix>:5173/symphonix-player.js && node symphonix-player.js --server http://<symphonix>:5173 --root .
 // だけで動く
 const bundlePath = path.resolve(process.env.PLAYER_BUNDLE ?? '../player/dist/symphonix-player.js');
 

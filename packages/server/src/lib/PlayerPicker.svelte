@@ -43,7 +43,7 @@
 		プレイヤーがつながっていません。symphonix のリポジトリで <code>pnpm player</code> を実行するか、
 		作業したいフォルダで
 		<code
-			>curl -O {origin}/symphonix-player.js && node symphonix-player.js --server {origin} --root .</code
+			>curl -fO {origin}/symphonix-player.js && node symphonix-player.js --server {origin} --root .</code
 		>
 		を実行してください（別のコンテナからは {origin} の localhost を host.docker.internal に置き換えてください）。
 	</span>
