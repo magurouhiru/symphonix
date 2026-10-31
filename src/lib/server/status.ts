@@ -162,7 +162,10 @@ function modelsFrom(
 	downloads: Map<string, DownloadStatus>
 ): ModelStatus[] {
 	const current = roleModels();
-	const ids = [...new Set([...requiredModels(), ...installed])];
+	// LocalAI が返す順番は毎回変わるので、使っていないモデルは名前順に並べる
+	const required = requiredModels();
+	const others = installed.filter((id) => !required.includes(id)).sort();
+	const ids = [...required, ...others];
 	return ids.map((id) => {
 		const live = loaded.find((m) => m.id === id);
 		const isInstalled = installed.includes(id);
