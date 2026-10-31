@@ -10,14 +10,16 @@ Write titles and descriptions in the same language as the user.`;
 
 export async function createPlan(request: string): Promise<PlanStep[]> {
 	const persona = personaFor('plan');
-	const content = await chat(
-		[
-			{ role: 'system', content: withPersona(persona.prompt, SYSTEM_PROMPT) },
-			{ role: 'user', content: request }
-		],
-		persona.resolvedModel
-	);
-	return parsePlan(content);
+	const messages = [
+		{ role: 'system' as const, content: withPersona(persona.prompt, SYSTEM_PROMPT) },
+		{ role: 'user' as const, content: request }
+	];
+	// 読み取れない返事が来たら、もう一度だけ頼み直す
+	try {
+		return parsePlan(await chat(messages, persona.resolvedModel));
+	} catch {
+		return parsePlan(await chat(messages, persona.resolvedModel));
+	}
 }
 
 // 小さいモデルは JSON の前後に文章やコードフェンスを付けがちなので、最初の { から最後の } までを読む
