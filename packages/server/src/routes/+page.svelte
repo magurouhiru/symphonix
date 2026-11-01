@@ -2,6 +2,7 @@
 	import { taskLabels, tasks, type Persona, type Task } from '#lib/personas/types.js';
 	import { PipelineRun, statusLabel } from '#lib/pipeline/runner.svelte.js';
 	import type { PlanStep } from '#lib/pipeline/types.js';
+	import PlayerInstall from '#lib/players/PlayerInstall.svelte';
 	import PlayerPicker from '#lib/players/PlayerPicker.svelte';
 	import { postJson } from '#lib/shared/api.js';
 	import { errorMessage } from '#lib/shared/errors.js';
@@ -125,6 +126,8 @@
 		<small>新しく作ります</small>
 	{/if}
 </p>
+<!-- プレイヤーがまだ無ければ開いておく -->
+<PlayerInstall open={!player} />
 
 <form onsubmit={generate}>
 	<textarea
