@@ -4,7 +4,8 @@ import path from 'node:path';
 import { ROOT_PROJECT } from '#lib/shared/projects.js';
 import { callPlayer } from './registry.server.js';
 
-export type GeneratedFile = { path: string; content: string };
+export type { GeneratedFile } from '#lib/pipeline/types.js';
+import type { GeneratedFile } from '#lib/pipeline/types.js';
 export type Target = { player: string; project: string };
 export type ProjectSummary = { name: string; files: number; updatedAt: string };
 

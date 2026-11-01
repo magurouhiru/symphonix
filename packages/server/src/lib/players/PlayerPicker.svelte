@@ -10,18 +10,31 @@
 		players = (await fetch('/api/players').then((r) => r.json())).players;
 		const connected = players.filter((c) => c.connected);
 		if (!connected.some((c) => c.id === selected)) {
-			let remembered = '';
+			// id はホスト名と作業フォルダで決まるので、つなぎ直しても同じ。
+			// コンテナを作り直すと id が変わるので、そのときは同じ作業フォルダのものを選ぶ
+			let remembered = { id: '', root: '' };
 			try {
-				remembered = localStorage.getItem('symphonix-player-root') ?? '';
+				remembered = {
+					id: localStorage.getItem('symphonix-player-id') ?? '',
+					root: localStorage.getItem('symphonix-player-root') ?? ''
+				};
 			} catch {}
-			selected = (connected.find((c) => c.root === remembered) ?? connected[0])?.id ?? '';
+			selected =
+				(
+					connected.find((c) => c.id === remembered.id) ??
+					connected.find((c) => c.root === remembered.root) ??
+					connected[0]
+				)?.id ?? '';
 		}
 	}
 
 	$effect(() => {
 		player = players.find((c) => c.id === selected);
 		try {
-			if (player) localStorage.setItem('symphonix-player-root', player.root);
+			if (player) {
+				localStorage.setItem('symphonix-player-id', player.id);
+				localStorage.setItem('symphonix-player-root', player.root);
+			}
 		} catch {}
 	});
 
@@ -35,7 +48,7 @@
 {#if players.some((c) => c.connected)}
 	<select bind:value={selected}>
 		{#each players.filter((c) => c.connected) as c}
-			<option value={c.id}>{c.name}（{c.root}）</option>
+			<option value={c.id}>{c.name}（{c.host}:{c.root}）</option>
 		{/each}
 	</select>
 {:else}
