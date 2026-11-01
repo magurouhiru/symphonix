@@ -2,6 +2,7 @@
 // 指定したフォルダ（root）の中だけで行う。VS Code 拡張からもそのまま使えるよう、Node の標準機能だけで書く
 import { spawn } from 'node:child_process';
 import { mkdir, readdir, readFile, stat, writeFile } from 'node:fs/promises';
+import os from 'node:os';
 import path from 'node:path';
 import {
 	DEFAULT_ALLOW,
@@ -176,7 +177,7 @@ export function createPlayer({
 	}
 
 	async function connect() {
-		const body: ConnectRequest = { name: name ?? path.basename(rootDir), root: rootDir, allow };
+		const body: ConnectRequest = { name: name ?? path.basename(rootDir), host: os.hostname(), root: rootDir, allow };
 		const data = await api<ConnectResponse>(playerApi.connect, { method: 'POST', body: JSON.stringify(body) });
 		id = data!.id;
 		log(`symphonix（${base}）に接続しました: ${rootDir}`);
@@ -210,7 +211,7 @@ export function createPlayer({
 				await api(playerApi.result(id), { method: 'POST', body: JSON.stringify(reply) });
 			} catch (e) {
 				if (stopped) break;
-				if (e instanceof HttpError && e.status === 404) id = ''; // symphonix が再起動した
+				if (e instanceof HttpError && e.status === 404) id = ''; // symphonix が再起動した（つなぎ直せば同じ id に戻る）
 				setStatus('connecting');
 				log(`接続できません（${e instanceof Error ? e.message : e}）。3 秒後にやり直します`);
 				await wait(3000);

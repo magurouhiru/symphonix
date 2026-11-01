@@ -1,12 +1,13 @@
 // プレイヤーの受付と、プレイヤーへの仕事の受け渡し。
 // プレイヤーは /next に「次の仕事ある？」と聞きに来て（ロングポーリング）、終わったら /result に結果を返す
-import { randomUUID } from 'node:crypto';
+import { createHash, randomUUID } from 'node:crypto';
 import { POLL_MS, type Job, type Method, type Methods, type PlayerInfo } from '@symphonix/protocol';
 
 type Pending = { resolve: (value: unknown) => void; reject: (error: Error) => void; timer: NodeJS.Timeout };
 type Player = {
 	id: string;
 	name: string;
+	host: string;
 	root: string;
 	allow: string[];
 	lastSeen: number;
@@ -24,13 +25,17 @@ const players = (store.__symphonixPlayers ??= new Map());
 
 const isConnected = (c: Player) => !!c.waiter || Date.now() - c.lastSeen < OFFLINE_MS;
 
-export function registerPlayer(name: string, root: string, allow: string[]): string {
-	// 同じフォルダのプレイヤーがつなぎ直したら、古いほうは消す
-	for (const [id, c] of players) {
-		if (c.root === root && c.name === name) dropPlayer(id, 'プレイヤーがつなぎ直しました');
-	}
-	const id = randomUUID();
-	players.set(id, { id, name, root, allow, lastSeen: Date.now(), queue: [], pending: new Map() });
+// id はホスト名と作業フォルダから決める（例: p-3f9a2c1e7b4d）。symphonix やプレイヤーを再起動しても
+// 同じ id でつなぎ直せるので、画面で選んだプレイヤーや実行中の作業がそのまま続けられる
+export function playerId(host: string, root: string): string {
+	return 'p-' + createHash('sha256').update(`${host}\0${root}`).digest('hex').slice(0, 12);
+}
+
+export function registerPlayer(name: string, host: string, root: string, allow: string[]): string {
+	const id = playerId(host, root);
+	// 同じプレイヤーがつなぎ直したら、古い接続に頼んでいた仕事は返ってこないので失敗にする
+	dropPlayer(id, 'プレイヤーがつなぎ直しました');
+	players.set(id, { id, name, host, root, allow, lastSeen: Date.now(), queue: [], pending: new Map() });
 	return id;
 }
 
@@ -49,6 +54,7 @@ export function listPlayers(): PlayerInfo[] {
 	return [...players.values()].map((c) => ({
 		id: c.id,
 		name: c.name,
+		host: c.host,
 		root: c.root,
 		allow: c.allow,
 		connected: isConnected(c)
