@@ -77,6 +77,7 @@ VRAM 8GB に収めるため、LocalAI は同時に 1 つのモデルしか読み
 | 環境変数 | 既定値 | 説明 |
 | --- | --- | --- |
 | `AI_BASE_URL` | `http://localai:8080/v1` | LocalAI の OpenAI 互換 API |
+| `AI_TIMEOUT_SEC` | `600` | 文章・画像・音声の生成で LocalAI の返事を待つ秒数（モデルの読み込み待ちを含む）。状態の確認は 5 秒で諦める |
 | `MODEL` | `gemma-4-e4b-it-qat-q4_0` | 文章・コード生成に使うモデル |
 | `IMAGE_MODEL` | `sd-1.5-ggml` | 画像生成に使うモデル |
 | `STT_MODEL` | `whisper-small` | 文字起こしに使うモデル |
