@@ -7,9 +7,7 @@ import type { RequestHandler } from './$types';
 export const GET: RequestHandler = async () => {
 	const current = roleModels();
 	return json({
-		models: Object.fromEntries(
-			roles.map((role) => [role, { model: current[role], default: defaultModel(role) }])
-		)
+		models: Object.fromEntries(roles.map((role) => [role, { model: current[role], default: defaultModel(role) }]))
 	});
 };
 

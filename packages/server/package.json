@@ -1,8 +1,13 @@
 {
 	"name": "@symphonix/server",
-	"private": true,
 	"version": "0.0.1",
+	"private": true,
+	"description": "symphonix 本体（プランを立て、AI に実装させ、プレイヤーに書き出させる SvelteKit サーバー）",
 	"type": "module",
+	"imports": {
+		"#lib": "./src/lib/index.js",
+		"#lib/*": "./src/lib/*"
+	},
 	"scripts": {
 		"dev": "pnpm --filter @symphonix/player --filter symphonix-vscode build && vite dev --host",
 		"build": "pnpm --filter @symphonix/player --filter symphonix-vscode build && vite build",
@@ -10,6 +15,9 @@
 		"prepare": "svelte-kit sync || echo ''",
 		"check": "tsc -b ../protocol && svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
 		"check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch"
+	},
+	"dependencies": {
+		"@symphonix/protocol": "workspace:*"
 	},
 	"devDependencies": {
 		"@sveltejs/adapter-node": "^6.0.0",
@@ -21,13 +29,5 @@
 		"svelte-check": "^4.6.0",
 		"typescript": "^6.0.3",
 		"vite": "^8.3.0"
-	},
-	"imports": {
-		"#lib": "./src/lib/index.js",
-		"#lib/*": "./src/lib/*"
-	},
-	"description": "symphonix 本体（プランを立て、AI に実装させ、プレイヤーに書き出させる SvelteKit サーバー）",
-	"dependencies": {
-		"@symphonix/protocol": "workspace:*"
 	}
 }

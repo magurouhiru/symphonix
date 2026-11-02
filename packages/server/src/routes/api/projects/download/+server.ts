@@ -19,8 +19,7 @@ export const GET: RequestHandler = async ({ url }) => {
 		error(404, errorMessage(e));
 	}
 	if (Object.keys(files).length === 0) error(404, 'プロジェクトにファイルがありません');
-	const name =
-		project === ROOT_PROJECT ? (listPlayers().find((p) => p.id === player)?.name ?? 'workspace') : project;
+	const name = project === ROOT_PROJECT ? (listPlayers().find((p) => p.id === player)?.name ?? 'workspace') : project;
 	const zip = zipSync({ [name]: files });
 	return new Response(zip, {
 		headers: {

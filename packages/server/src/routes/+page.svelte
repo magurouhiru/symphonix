@@ -135,17 +135,26 @@
 {#if staff.length}
 	<p>
 		担当:
-		{#each staff as s, i}{i ? '、' : ''}{taskLabels[s.task]}は{s.name}（{s.model}{s.translate ? '、英訳' : ''}）{/each}、レビューは{reviewerNames.length
-			? reviewerNames.join('と')
-			: 'なし'}
+		{#each staff as s, i}{i ? '、' : ''}{taskLabels[s.task]}は{s.name}（{s.model}{s.translate
+				? '、英訳'
+				: ''}）{/each}、レビューは{reviewerNames.length ? reviewerNames.join('と') : 'なし'}
 		<a href="/personas">変更</a>
 	</p>
 {/if}
 
 <p>
 	作る場所: <PlayerPicker bind:selected={playerId} bind:player />
-	/ <input bind:value={folder} list="projects" size="20" placeholder="フォルダ名（空なら日時）" disabled={pipeline.running || atRoot} />
-	<label><input type="checkbox" bind:checked={atRoot} disabled={pipeline.running} /> フォルダを作らず直下で作業する</label>
+	/
+	<input
+		bind:value={folder}
+		list="projects"
+		size="20"
+		placeholder="フォルダ名（空なら日時）"
+		disabled={pipeline.running || atRoot}
+	/>
+	<label
+		><input type="checkbox" bind:checked={atRoot} disabled={pipeline.running} /> フォルダを作らず直下で作業する</label
+	>
 	<datalist id="projects">
 		{#each projects as p}<option value={p.name}></option>{/each}
 	</datalist>
@@ -189,8 +198,12 @@
 			</li>
 		{/each}
 	</ol>
-	<button onclick={() => steps.push({ title: '新しいステップ', description: '' })} disabled={pipeline.running}>ステップを追加</button>
-	<button onclick={() => run()} disabled={pipeline.running || !playerId}>{pipeline.running ? '実装中…' : 'このプランで実装する'}</button>
+	<button onclick={() => steps.push({ title: '新しいステップ', description: '' })} disabled={pipeline.running}
+		>ステップを追加</button
+	>
+	<button onclick={() => run()} disabled={pipeline.running || !playerId}
+		>{pipeline.running ? '実装中…' : 'このプランで実装する'}</button
+	>
 {/if}
 
 {#if pipeline.run}
@@ -270,7 +283,11 @@
 		{#each recent as x}
 			<li>
 				<a href="?run={encodeURIComponent(x.id)}" data-sveltekit-reload>{x.request.slice(0, 40) || '（依頼なし）'}</a>
-				<small>{runStateLabel[x.state]}・{x.done}/{x.steps} ステップ・{projectLabel(x.project)}・{new Date(x.createdAt).toLocaleString()}</small>
+				<small
+					>{runStateLabel[x.state]}・{x.done}/{x.steps} ステップ・{projectLabel(x.project)}・{new Date(
+						x.createdAt
+					).toLocaleString()}</small
+				>
 			</li>
 		{/each}
 	</ul>

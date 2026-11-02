@@ -48,7 +48,11 @@ export async function request(path: string, options: RequestOptions = {}): Promi
 	}
 	if (!res.ok) {
 		const body = await res.text().catch(() => '');
-		throw new LocalAIError(`LocalAI がエラーを返しました（${path}、${res.status}）: ${body.slice(0, 2000)}`, res.status, body);
+		throw new LocalAIError(
+			`LocalAI がエラーを返しました（${path}、${res.status}）: ${body.slice(0, 2000)}`,
+			res.status,
+			body
+		);
 	}
 	return res;
 }

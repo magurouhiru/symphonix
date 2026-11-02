@@ -57,8 +57,9 @@
 </script>
 
 <p>
-	作業ごとに担当する AI のペルソナを決められます。人物像はモデルへの指示の先頭に付きます。
-	モデルを空にすると、<a href="/settings">使うモデル</a>の「文章」のモデル（今は {defaultModel}）を使います。
+	作業ごとに担当する AI のペルソナを決められます。人物像はモデルへの指示の先頭に付きます。 モデルを空にすると、<a
+		href="/settings">使うモデル</a
+	>の「文章」のモデル（今は {defaultModel}）を使います。
 </p>
 
 {#if assigned}
@@ -72,7 +73,12 @@
 						<select
 							value={assigned[task]}
 							onchange={(e) =>
-								send('/api/personas/assignments', 'PUT', { task, persona: e.currentTarget.value }, `${taskLabels[task]}の担当を変えました。`)}
+								send(
+									'/api/personas/assignments',
+									'PUT',
+									{ task, persona: e.currentTarget.value },
+									`${taskLabels[task]}の担当を変えました。`
+								)}
 						>
 							{#each personas as p}
 								<option value={p.id}>{p.name}</option>
@@ -94,7 +100,9 @@
 							{p.name}
 						</label><br />
 					{/each}
-					<small>実装のたびにチェックした全員がレビューし、全員が承認したら次のステップへ進みます。だれもチェックしなければレビューしません。</small>
+					<small
+						>実装のたびにチェックした全員がレビューし、全員が承認したら次のステップへ進みます。だれもチェックしなければレビューしません。</small
+					>
 				</td>
 			</tr>
 		</tbody>
@@ -111,16 +119,25 @@
 <h2>ペルソナ</h2>
 {#each personas as p (p.id)}
 	<fieldset>
-		<legend>{p.name}{#if usedBy(p.id).length}（{usedBy(p.id).join('、')}を担当中）{/if}</legend>
+		<legend
+			>{p.name}{#if usedBy(p.id).length}（{usedBy(p.id).join('、')}を担当中）{/if}</legend
+		>
 		<label>名前 <input bind:value={p.name} size="20" /></label>
 		<label>モデル <input bind:value={p.model} size="30" placeholder={defaultModel} /></label>
-		<label title="依頼やプランを英語に訳して渡し、返ってきたプランやコメントを日本語に戻します（翻訳には使うモデルの「翻訳」のモデルを使います）">
+		<label
+			title="依頼やプランを英語に訳して渡し、返ってきたプランやコメントを日本語に戻します（翻訳には使うモデルの「翻訳」のモデルを使います）"
+		>
 			<input type="checkbox" bind:checked={p.translate} /> 日本語が苦手なモデル（英語に訳して渡す）
 		</label>
-		<div><textarea bind:value={p.prompt} rows="3" cols="80" placeholder="人物像（例: You are a senior engineer who...）"></textarea></div>
+		<div>
+			<textarea bind:value={p.prompt} rows="3" cols="80" placeholder="人物像（例: You are a senior engineer who...）"
+			></textarea>
+		</div>
 		<button onclick={() => send(`/api/personas/${p.id}`, 'PUT', p, `${p.name} を保存しました。`)}>保存</button>
 		<button
-			onclick={() => confirm(`${p.name} を削除しますか？`) && send(`/api/personas/${p.id}`, 'DELETE', undefined, `${p.name} を削除しました。`)}
+			onclick={() =>
+				confirm(`${p.name} を削除しますか？`) &&
+				send(`/api/personas/${p.id}`, 'DELETE', undefined, `${p.name} を削除しました。`)}
 			disabled={usedBy(p.id).length > 0}
 			title={usedBy(p.id).length ? '担当中のペルソナは削除できません' : ''}>削除</button
 		>
@@ -132,7 +149,10 @@
 	<label>名前 <input bind:value={draft.name} size="20" /></label>
 	<label>モデル <input bind:value={draft.model} size="30" placeholder={defaultModel} /></label>
 	<label><input type="checkbox" bind:checked={draft.translate} /> 日本語が苦手なモデル（英語に訳して渡す）</label>
-	<div><textarea bind:value={draft.prompt} rows="3" cols="80" placeholder="人物像（例: You are a senior engineer who...）"></textarea></div>
+	<div>
+		<textarea bind:value={draft.prompt} rows="3" cols="80" placeholder="人物像（例: You are a senior engineer who...）"
+		></textarea>
+	</div>
 	<button onclick={create} disabled={!draft.name.trim()}>追加</button>
 </fieldset>
 

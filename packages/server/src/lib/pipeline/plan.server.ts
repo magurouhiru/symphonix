@@ -24,7 +24,10 @@ export async function createPlan(request: string, target?: Target): Promise<Plan
 	const context = target ? await projectContext(target, want, persona.resolvedModel) : null;
 	const existing = context && context.paths.length > 0;
 	const messages = [
-		{ role: 'system' as const, content: withPersona(persona.prompt, SYSTEM_PROMPT + (existing ? EXISTING_PROMPT : '')) },
+		{
+			role: 'system' as const,
+			content: withPersona(persona.prompt, SYSTEM_PROMPT + (existing ? EXISTING_PROMPT : ''))
+		},
 		{ role: 'user' as const, content: existing ? `${want}\n\nExisting project:\n${contextText(context)}` : want }
 	];
 	// 読み取れない返事が来たら、もう一度だけ頼み直す

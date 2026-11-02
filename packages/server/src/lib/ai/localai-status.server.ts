@@ -63,9 +63,7 @@ async function serverState(): Promise<{ server: ServerState; reason?: string }> 
 function jobFor(id: string, jobs: Record<string, Job>): Job | undefined {
 	const mine = requested.get(id);
 	if (mine?.jobId && jobs[mine.jobId]) return jobs[mine.jobId];
-	return Object.values(jobs).find(
-		(j) => j.gallery_element_name === id && !j.processed && !j.deletion
-	);
+	return Object.values(jobs).find((j) => j.gallery_element_name === id && !j.processed && !j.deletion);
 }
 
 // 入っていない必須モデルのダウンロードを LocalAI に依頼する。進行中・直近に失敗したものは依頼しない
@@ -143,13 +141,11 @@ export async function getStatus(): Promise<StatusReport> {
 		// モデルごとの VRAM は NVIDIA では取れないので、GPU 全体の使用量（nvidia-smi 由来）を返す
 		gpus:
 			resources.status === 'fulfilled'
-				? (resources.value.gpus ?? []).map(
-						(g: { name: string; used_vram: number; total_vram: number }): GpuStatus => ({
-							name: g.name,
-							usedBytes: g.used_vram,
-							totalBytes: g.total_vram
-						})
-					)
+				? (resources.value.gpus ?? []).map((g: { name: string; used_vram: number; total_vram: number }): GpuStatus => ({
+						name: g.name,
+						usedBytes: g.used_vram,
+						totalBytes: g.total_vram
+					}))
 				: [],
 		models: modelsFrom(installed, loaded, downloadsFrom(installed, jobList)),
 		checkedAt

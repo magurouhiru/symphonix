@@ -7,12 +7,12 @@
 
 symphonix を指揮者、ファイルを実際に読み書きする側をプレイヤーと呼んでいます。
 
-| パッケージ | 中身 |
-| --- | --- |
-| `packages/server`（`@symphonix/server`） | symphonix 本体。プランを立て、AI に実装・レビューさせ、プレイヤーに書き出させる SvelteKit サーバー |
-| `packages/player`（`@symphonix/player`） | プレイヤー。作業フォルダを持ち、symphonix に接続して、ファイルの一覧・読み書きとコマンドの実行を受け持つ |
-| `packages/protocol`（`@symphonix/protocol`） | 両者が共有する型と API の決まりごと |
-| `packages/vscode`（`symphonix-vscode`） | プレイヤーの VS Code 拡張機能。VS Code で開いているフォルダをそのまま作業フォルダにする |
+| パッケージ                                   | 中身                                                                                                     |
+| -------------------------------------------- | -------------------------------------------------------------------------------------------------------- |
+| `packages/server`（`@symphonix/server`）     | symphonix 本体。プランを立て、AI に実装・レビューさせ、プレイヤーに書き出させる SvelteKit サーバー       |
+| `packages/player`（`@symphonix/player`）     | プレイヤー。作業フォルダを持ち、symphonix に接続して、ファイルの一覧・読み書きとコマンドの実行を受け持つ |
+| `packages/protocol`（`@symphonix/protocol`） | 両者が共有する型と API の決まりごと                                                                      |
+| `packages/vscode`（`symphonix-vscode`）      | プレイヤーの VS Code 拡張機能。VS Code で開いているフォルダをそのまま作業フォルダにする                  |
 
 symphonix はファイルを直接触らず、生成したファイルの読み書きやビルド・テストをすべてプレイヤーに頼みます。
 プレイヤーは HTTP のロングポーリングで symphonix に「次の仕事」を取りに行くので、別の devcontainer からでもつなげます。
@@ -30,15 +30,19 @@ symphonix はファイルを直接触らず、生成したファイルの読み�
    pnpm dev
    ```
 3. 別のターミナルでプレイヤーを起動します。
+
    ```sh
    pnpm player   # workspace/ を作業フォルダにする
    ```
+
    別の devcontainer で作業したいときは、symphonix が配っている VS Code 拡張機能を入れるのが手軽です。
    VS Code に入っている Node.js で動くので、コンテナに Node.js が無くても使えます。そのコンテナの VS Code のターミナルで次を実行します。
+
    ```sh
    curl -fO http://host.docker.internal:7373/symphonix-player.vsix
    code --install-extension symphonix-player.vsix
    ```
+
    コマンドパレットの「symphonix: プレイヤーを起動」か、左下のステータスバーの「symphonix」を押すと、開いているフォルダを作業フォルダにして接続します。
    - 接続先・作業フォルダ・実行してよいコマンドは設定の `symphonix.server`、`symphonix.root`、`symphonix.allow` で変えられます。`symphonix.autoStart` を有効にすると、開いたときに自動で起動します
    - 拡張機能はコンテナ側で動く（`extensionKind: workspace`）ので、コンテナの中のファイルとコマンドを扱います
@@ -46,14 +50,17 @@ symphonix はファイルを直接触らず、生成したファイルの読み�
    - この拡張機能自体を直すときは、このリポジトリで F5 を押すと拡張機能開発ホストで試せます
 
    VS Code を使わない環境では、1 ファイルのプレイヤーを取ってきて実行します。Node.js 18 以上があれば、ほかに何も要りません。
+
    ```sh
    curl -fO http://host.docker.internal:7373/symphonix-player.js
    node symphonix-player.js --server http://host.docker.internal:7373 --root <作業フォルダ>
    ```
+
    symphonix のコンテナはポート 7373 を公開しているので、別のコンテナからは `host.docker.internal:7373` で届きます（Windows からは今まで通り `localhost:7373`）。
    - プレイヤーは作業フォルダの外を読み書きしません
    - 実行するコマンドは `node`、`npm`、`python3` だけです。変えるときは `--allow node,npm` のように指定します
    - `packages/player/src/player.ts` の `createPlayer` が本体で、`cli.ts` はそれを起動するだけです。VS Code 拡張からは `@symphonix/player` の `createPlayer` をそのまま使えます
+
 4. http://localhost:7373 を開き、作りたいものを入力して「プランを作る」を押すと、ステップ一覧が表示されます（タイトル・説明の編集、並べ替え、追加、削除ができます）。
    「このプランで実装する」を押すと、ステップを 1 つずつ順番にモデルに実装させ、生成したファイルをプレイヤーの作業フォルダの `<フォルダ名>/` に書き出します（フォルダ名を空にすると日時。`workspace/` は git には入りません）。
    「フォルダを作らず直下で作業する」にチェックを入れると、フォルダを作らずに作業フォルダの直下に書き出します。VS Code 拡張機能で開いているフォルダをそのまま育てたいときに使います。
@@ -74,19 +81,31 @@ symphonix はファイルを直接触らず、生成したファイルの読み�
 
 VRAM 8GB に収めるため、LocalAI は同時に 1 つのモデルしか読み込みません。文章と画像を切り替えた直後の 1 回目は読み込み待ちで遅くなります。
 
+## コードのチェック
+
+| コマンド            | 内容                                                       |
+| ------------------- | ---------------------------------------------------------- |
+| `pnpm format`       | Oxfmt で整形する（`.svelte` を含む）                       |
+| `pnpm format:check` | 整形されているか確かめる                                   |
+| `pnpm lint`         | Oxlint で lint する（`.svelte` は `<script>` の中だけ）    |
+| `pnpm check`        | 型チェック。`.svelte` のテンプレートは svelte-check が見る |
+
+PR と main への push では GitHub Actions がこの 4 つと `pnpm build` を回します。
+VS Code では推奨拡張機能の Oxc を入れると、エディタ上で整形や lint の結果を使えます。
+
 ## 設定
 
-| 環境変数 | 既定値 | 説明 |
-| --- | --- | --- |
-| `AI_BASE_URL` | `http://localai:8080/v1` | LocalAI の OpenAI 互換 API |
-| `AI_TIMEOUT_SEC` | `600` | 文章・画像・音声の生成で LocalAI の返事を待つ秒数（モデルの読み込み待ちを含む）。状態の確認は 5 秒で諦める |
-| `MODEL` | `gemma-4-e4b-it-qat-q4_0` | 文章・コード生成に使うモデル |
-| `IMAGE_MODEL` | `sd-1.5-ggml` | 画像生成に使うモデル |
-| `STT_MODEL` | `whisper-small` | 文字起こしに使うモデル |
-| `TTS_MODEL` | `supertonic-3` | 読み上げに使うモデル |
-| `PERSONAS_PATH` | `data/personas.json`（`packages/server` から） | ペルソナと担当の保存先 |
-| `SETTINGS_PATH` | `data/settings.json`（`packages/server` から） | 画面で選んだモデルの保存先 |
-| `RUNS_PATH` | `data/runs`（`packages/server` から） | 実行の記録（1 回の実行につき 1 ファイル）の保存先 |
+| 環境変数         | 既定値                                         | 説明                                                                                                       |
+| ---------------- | ---------------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
+| `AI_BASE_URL`    | `http://localai:8080/v1`                       | LocalAI の OpenAI 互換 API                                                                                 |
+| `AI_TIMEOUT_SEC` | `600`                                          | 文章・画像・音声の生成で LocalAI の返事を待つ秒数（モデルの読み込み待ちを含む）。状態の確認は 5 秒で諦める |
+| `MODEL`          | `gemma-4-e4b-it-qat-q4_0`                      | 文章・コード生成に使うモデル                                                                               |
+| `IMAGE_MODEL`    | `sd-1.5-ggml`                                  | 画像生成に使うモデル                                                                                       |
+| `STT_MODEL`      | `whisper-small`                                | 文字起こしに使うモデル                                                                                     |
+| `TTS_MODEL`      | `supertonic-3`                                 | 読み上げに使うモデル                                                                                       |
+| `PERSONAS_PATH`  | `data/personas.json`（`packages/server` から） | ペルソナと担当の保存先                                                                                     |
+| `SETTINGS_PATH`  | `data/settings.json`（`packages/server` から） | 画面で選んだモデルの保存先                                                                                 |
+| `RUNS_PATH`      | `data/runs`（`packages/server` から）          | 実行の記録（1 回の実行につき 1 ファイル）の保存先                                                          |
 
 モデルの環境変数は画面で何も選んでいないときの既定値です。アプリ側の値は `.devcontainer/compose.yaml` の `app` の `environment` で変えられます。
 別のモデルを使うときは、`/settings` の画面か `MODEL` などの環境変数に [LocalAI のモデルギャラリー](https://models.localai.io) の名前を指定すれば、足りない分は自動でダウンロードされます。

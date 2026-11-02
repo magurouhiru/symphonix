@@ -49,7 +49,10 @@ export async function checkProject(target: Target): Promise<CheckResult[]> {
 		const missing = [...html.matchAll(/\b(?:src|href)\s*=\s*["']([^"'#?]+)/gi)]
 			.map((m) => m[1])
 			.filter((ref) => !/^([a-z]+:|\/\/|data:)/i.test(ref))
-			.map((ref) => ({ ref, target: path.posix.normalize(path.posix.join(path.posix.dirname(rel), ref.replace(/^\//, ''))) }))
+			.map((ref) => ({
+				ref,
+				target: path.posix.normalize(path.posix.join(path.posix.dirname(rel), ref.replace(/^\//, '')))
+			}))
 			.filter(({ target }) => !files.includes(target) && !files.includes(path.posix.join(target, 'index.html')));
 		if (missing.length) {
 			results.push({

@@ -54,8 +54,7 @@
 
 	{#if downloading.length || queued.length}
 		<p>
-			⬇️ モデルを準備中です（ダウンロード中: {downloading.join(', ') || 'なし'}、順番待ち: {queued.length} 件）。
-			終わるまでその用途は使えません。
+			⬇️ モデルを準備中です（ダウンロード中: {downloading.join(', ') || 'なし'}、順番待ち: {queued.length} 件）。 終わるまでその用途は使えません。
 		</p>
 	{/if}
 

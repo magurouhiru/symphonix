@@ -15,7 +15,7 @@ export async function transcribe(audio: Blob, filename: string): Promise<string>
 function plainText(text: string): string {
 	return text
 		.replace(/```[\s\S]*?```/g, '')
-		.replace(/[*_#`>|~\[\]()]/g, '')
+		.replace(/[*_#`>|~[\]()]/g, '')
 		.replace(/\p{Extended_Pictographic}/gu, '')
 		.replace(/\s+/g, ' ')
 		.trim();

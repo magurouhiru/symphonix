@@ -1,7 +1,7 @@
 {
 	"name": "@symphonix/protocol",
-	"private": true,
 	"version": "0.0.1",
+	"private": true,
 	"description": "symphonix 本体とプレイヤーが共有する型と API の決まりごと",
 	"type": "module",
 	"exports": {
