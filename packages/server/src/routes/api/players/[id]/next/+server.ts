@@ -1,4 +1,3 @@
-import { json } from '@sveltejs/kit';
 import { nextJob } from '#lib/players/registry.server.js';
 import type { RequestHandler } from './$types';
 
@@ -9,7 +8,7 @@ const headers = { Connection: 'close' };
 // プレイヤーが次の仕事を待つ（ロングポーリング）。仕事が無ければ 204
 export const GET: RequestHandler = async ({ params, request }) => {
 	const waiting = nextJob(params.id, request.signal);
-	if (!waiting) return json({ error: '接続し直してください' }, { status: 404, headers });
+	if (!waiting) return Response.json({ error: '接続し直してください' }, { status: 404, headers });
 	const job = await waiting;
-	return job ? json(job, { headers }) : new Response(null, { status: 204, headers });
+	return job ? Response.json(job, { headers }) : new Response(null, { status: 204, headers });
 };

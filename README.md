@@ -83,12 +83,12 @@ VRAM 8GB に収めるため、LocalAI は同時に 1 つのモデルしか読み
 
 ## コードのチェック
 
-| コマンド            | 内容                                                       |
-| ------------------- | ---------------------------------------------------------- |
-| `pnpm format`       | Oxfmt で整形する（`.svelte` を含む）                       |
-| `pnpm format:check` | 整形されているか確かめる                                   |
-| `pnpm lint`         | Oxlint で lint する（`.svelte` は `<script>` の中だけ）    |
-| `pnpm check`        | 型チェック。`.svelte` のテンプレートは svelte-check が見る |
+| コマンド            | 内容                                                                                                                           |
+| ------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
+| `pnpm format`       | Oxfmt で整形する（`.svelte` を含む）                                                                                           |
+| `pnpm format:check` | 整形されているか確かめる                                                                                                       |
+| `pnpm lint`         | Oxlint で lint する。型情報を使い、非推奨の API も禁止する（`.svelte` は `<script>` の中だけで、型情報を使うルールは効かない） |
+| `pnpm check`        | 型チェック。`.svelte` のテンプレートは svelte-check が見る                                                                     |
 
 PR と main への push では GitHub Actions がこの 4 つと `pnpm build` を回します。
 VS Code では推奨拡張機能の Oxc を入れると、エディタ上で整形や lint の結果を使えます。

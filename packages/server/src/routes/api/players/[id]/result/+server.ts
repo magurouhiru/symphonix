@@ -1,4 +1,3 @@
-import { json } from '@sveltejs/kit';
 import { submitResult } from '#lib/players/registry.server.js';
 import type { RequestHandler } from './$types';
 
@@ -6,7 +5,7 @@ import type { RequestHandler } from './$types';
 export const POST: RequestHandler = async ({ params, request }) => {
 	const { jobId, result, error } = await request.json();
 	if (!submitResult(params.id, String(jobId), result, typeof error === 'string' ? error : undefined)) {
-		return json({ error: 'unknown job' }, { status: 404 });
+		return Response.json({ error: 'unknown job' }, { status: 404 });
 	}
-	return json({ ok: true });
+	return Response.json({ ok: true });
 };

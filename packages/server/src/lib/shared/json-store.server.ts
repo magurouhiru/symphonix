@@ -6,7 +6,7 @@ export function jsonStore<T>(file: string, options: { initial: () => T; migrate?
 	const fullPath = path.resolve(file);
 	let cache: T | null = null;
 	return {
-		get(): T {
+		get: (): T => {
 			if (cache === null) {
 				try {
 					const data = JSON.parse(readFileSync(fullPath, 'utf8')) as T;
@@ -17,7 +17,7 @@ export function jsonStore<T>(file: string, options: { initial: () => T; migrate?
 			}
 			return cache;
 		},
-		set(value: T) {
+		set: (value: T) => {
 			cache = value;
 			mkdirSync(path.dirname(fullPath), { recursive: true });
 			writeFileSync(fullPath, JSON.stringify(value, null, '\t') + '\n');

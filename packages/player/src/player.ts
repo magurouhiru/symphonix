@@ -213,7 +213,7 @@ export function createPlayer({
 				if (stopped) break;
 				if (e instanceof HttpError && e.status === 404) id = ''; // symphonix が再起動した（つなぎ直せば同じ id に戻る）
 				setStatus('connecting');
-				log(`接続できません（${e instanceof Error ? e.message : e}）。3 秒後にやり直します`);
+				log(`接続できません（${e instanceof Error ? e.message : String(e)}）。3 秒後にやり直します`);
 				await wait(3000);
 			}
 		}

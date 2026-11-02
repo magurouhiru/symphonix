@@ -25,7 +25,7 @@ const player = createPlayer({
 });
 
 process.on('SIGINT', () => {
-	player.stop();
+	void player.stop();
 	process.exit(0);
 });
 await player.start();

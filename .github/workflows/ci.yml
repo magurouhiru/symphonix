@@ -22,9 +22,10 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - name: フォーマット
         run: pnpm format:check
-      - name: Lint
-        run: pnpm lint
+      # 型情報を使う lint は protocol の型（check で作られる）を参照するので、check の後に回す
       - name: 型チェック
         run: pnpm check
+      - name: Lint
+        run: pnpm lint
       - name: ビルド
         run: pnpm build

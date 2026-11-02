@@ -1,4 +1,3 @@
-import { json } from '@sveltejs/kit';
 import { audioModelInfo, speak } from '#lib/ai/audio.server.js';
 import type { RequestHandler } from './$types';
 import { errorMessage } from '#lib/shared/errors.js';
@@ -7,7 +6,7 @@ import { errorMessage } from '#lib/shared/errors.js';
 export const POST: RequestHandler = async ({ request }) => {
 	const { text } = await request.json();
 	if (typeof text !== 'string' || !text.trim()) {
-		return json({ error: 'text is required' }, { status: 400 });
+		return Response.json({ error: 'text is required' }, { status: 400 });
 	}
 	try {
 		const res = await speak(text);
@@ -15,6 +14,6 @@ export const POST: RequestHandler = async ({ request }) => {
 			headers: { 'Content-Type': res.headers.get('Content-Type') ?? 'audio/wav' }
 		});
 	} catch (e) {
-		return json({ error: errorMessage(e), ...audioModelInfo }, { status: 502 });
+		return Response.json({ error: errorMessage(e), ...audioModelInfo }, { status: 502 });
 	}
 };
