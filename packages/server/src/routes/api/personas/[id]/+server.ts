@@ -10,7 +10,7 @@ export const PUT: RequestHandler = async ({ params, request }) => {
 	}
 };
 
-export const DELETE: RequestHandler = async ({ params }) => {
+export const DELETE: RequestHandler = ({ params }) => {
 	try {
 		deletePersona(params.id);
 		return Response.json({ ok: true });

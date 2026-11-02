@@ -14,7 +14,7 @@ const actions = { approve: approveAnyway, stop: stopRun, resume: resumeRun };
 
 export const POST: RequestHandler = async ({ params, request }) => {
 	const { action } = await request.json();
-	const handler = actions[action as keyof typeof actions];
+	const handler = Object.hasOwn(actions, action) ? actions[action as keyof typeof actions] : undefined;
 	if (!handler) return Response.json({ error: 'action must be approve, stop or resume' }, { status: 400 });
 	try {
 		return Response.json(handler(params.id));

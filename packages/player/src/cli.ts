@@ -14,8 +14,8 @@ const { values } = parseArgs({
 });
 
 const player = createPlayer({
-	server: values.server!,
-	root: values.root!,
+	server: values.server,
+	root: values.root,
 	name: values.name,
 	allow: values.allow
 		?.split(',')

@@ -3,7 +3,7 @@ import { defaultModel, roleModels, setRoleModel } from '#lib/ai/model-settings.s
 import type { RequestHandler } from './$types';
 
 // 用途ごとに今使っているモデルと既定のモデルを返す
-export const GET: RequestHandler = async () => {
+export const GET: RequestHandler = () => {
 	const current = roleModels();
 	return Response.json({
 		models: Object.fromEntries(roles.map((role) => [role, { model: current[role], default: defaultModel(role) }]))

@@ -58,7 +58,7 @@ export async function request(path: string, options: RequestOptions = {}): Promi
 }
 
 // 呼び出して、返ってきた JSON を返す
-export async function requestJson<T = any>(path: string, options: RequestOptions = {}): Promise<T> {
+export async function requestJson<T = unknown>(path: string, options: RequestOptions = {}): Promise<T> {
 	const timeoutMs = options.timeoutMs ?? GENERATE_TIMEOUT_MS;
 	const res = await request(path, options);
 	try {

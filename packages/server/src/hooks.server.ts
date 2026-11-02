@@ -4,5 +4,5 @@ import { getStatus } from '#lib/ai/localai-status.server.js';
 export const init = () => {
 	const check = () => getStatus().catch(() => {});
 	void check();
-	setInterval(check, 10_000).unref();
+	setInterval(() => void check(), 10_000).unref();
 };

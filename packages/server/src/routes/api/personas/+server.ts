@@ -4,7 +4,7 @@ import type { RequestHandler } from './$types';
 import { errorMessage } from '#lib/shared/errors.js';
 
 // ペルソナの一覧と作業への割り当て。defaultModel はモデル未指定のペルソナが使うモデル
-export const GET: RequestHandler = async () =>
+export const GET: RequestHandler = () =>
 	Response.json({
 		personas: listPersonas(),
 		assignments: assignments(),
