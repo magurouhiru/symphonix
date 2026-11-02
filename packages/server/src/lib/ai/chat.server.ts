@@ -6,7 +6,9 @@ export type ChatMessage = { role: 'system' | 'user' | 'assistant'; content: stri
 
 // model を省くと文章用のモデルを使う
 export async function chat(messages: ChatMessage[], model = roleModel('chat')): Promise<string> {
-	const data = await requestJson('/chat/completions', { json: { model, messages } });
+	const data = await requestJson<{ choices?: { message?: { content?: string } }[] }>('/chat/completions', {
+		json: { model, messages }
+	});
 	return data.choices?.[0]?.message?.content ?? '';
 }
 

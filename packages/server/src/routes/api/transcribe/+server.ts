@@ -1,4 +1,3 @@
-import { json } from '@sveltejs/kit';
 import { audioModelInfo, transcribe } from '#lib/ai/audio.server.js';
 import type { RequestHandler } from './$types';
 import { errorMessage } from '#lib/shared/errors.js';
@@ -8,11 +7,11 @@ import { errorMessage } from '#lib/shared/errors.js';
 export const POST: RequestHandler = async ({ request }) => {
 	const audio = await request.blob();
 	if (audio.size === 0) {
-		return json({ error: 'audio is required' }, { status: 400 });
+		return Response.json({ error: 'audio is required' }, { status: 400 });
 	}
 	try {
-		return json({ text: await transcribe(audio, 'audio.webm') });
+		return Response.json({ text: await transcribe(audio, 'audio.webm') });
 	} catch (e) {
-		return json({ error: errorMessage(e), ...audioModelInfo }, { status: 502 });
+		return Response.json({ error: errorMessage(e), ...audioModelInfo }, { status: 502 });
 	}
 };

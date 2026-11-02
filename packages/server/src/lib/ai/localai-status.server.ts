@@ -35,7 +35,7 @@ type Job = {
 };
 
 // /v1/models 以外も含め、すべて rootUrl からのパスで呼ぶ
-const getJson = (path: string) => requestJson(path, { root: true, timeoutMs: STATUS_TIMEOUT_MS });
+const getJson = <T>(path: string) => requestJson<T>(path, { root: true, timeoutMs: STATUS_TIMEOUT_MS });
 
 function parseReason(body: string): string | undefined {
 	try {
@@ -62,10 +62,8 @@ async function serverState(): Promise<{ server: ServerState; reason?: string }> 
 // （LocalAI はダウンロード開始直後の一瞬、ジョブからモデル名を外して報告する）
 function jobFor(id: string, jobs: Record<string, Job>): Job | undefined {
 	const mine = requested.get(id);
-	if (mine?.jobId && jobs[mine.jobId]) return jobs[mine.jobId];
-	return Object.values(jobs).find(
-		(j) => j.gallery_element_name === id && !j.processed && !j.deletion
-	);
+	if (mine?.jobId && mine.jobId in jobs) return jobs[mine.jobId];
+	return Object.values(jobs).find((j) => j.gallery_element_name === id && !j.processed && !j.deletion);
 }
 
 // 入っていない必須モデルのダウンロードを LocalAI に依頼する。進行中・直近に失敗したものは依頼しない
@@ -77,7 +75,11 @@ async function ensureModels(installed: string[], jobs: Record<string, Job>) {
 		const mine = requested.get(id);
 		if (mine && Date.now() - mine.at < RETRY_MS) continue;
 		try {
-			const job = await requestJson('/models/apply', { root: true, json: { id }, timeoutMs: STATUS_TIMEOUT_MS });
+			const job = await requestJson<{ uuid?: string }>('/models/apply', {
+				root: true,
+				json: { id },
+				timeoutMs: STATUS_TIMEOUT_MS
+			});
 			requested.set(id, { jobId: job.uuid ?? '', at: Date.now() });
 		} catch {
 			// 次の確認で再試行する
@@ -122,14 +124,13 @@ export async function getStatus(): Promise<StatusReport> {
 	}
 	// 起動中は一部の API が答えないことがあるので、取れたものだけ使う
 	const [version, models, system, jobs, resources] = await Promise.allSettled([
-		getJson('/version'),
-		getJson('/v1/models'),
-		getJson('/system'),
-		getJson('/models/jobs'),
-		getJson('/api/resources')
+		getJson<{ version?: string }>('/version'),
+		getJson<{ data?: { id: string }[] }>('/v1/models'),
+		getJson<{ loaded_models?: { id: string; backend?: string }[]; backends?: string[] }>('/system'),
+		getJson<Record<string, Job> | null>('/models/jobs'),
+		getJson<{ gpus?: { name: string; used_vram: number; total_vram: number }[] }>('/api/resources')
 	]);
-	const installed: string[] =
-		models.status === 'fulfilled' ? (models.value.data ?? []).map((m: { id: string }) => m.id) : [];
+	const installed: string[] = models.status === 'fulfilled' ? (models.value.data ?? []).map((m) => m.id) : [];
 	const loaded: { id: string; backend?: string }[] =
 		system.status === 'fulfilled' ? (system.value.loaded_models ?? []) : [];
 	const jobList: Record<string, Job> = jobs.status === 'fulfilled' ? (jobs.value ?? {}) : {};
@@ -143,13 +144,11 @@ export async function getStatus(): Promise<StatusReport> {
 		// モデルごとの VRAM は NVIDIA では取れないので、GPU 全体の使用量（nvidia-smi 由来）を返す
 		gpus:
 			resources.status === 'fulfilled'
-				? (resources.value.gpus ?? []).map(
-						(g: { name: string; used_vram: number; total_vram: number }): GpuStatus => ({
-							name: g.name,
-							usedBytes: g.used_vram,
-							totalBytes: g.total_vram
-						})
-					)
+				? (resources.value.gpus ?? []).map((g): GpuStatus => ({
+						name: g.name,
+						usedBytes: g.used_vram,
+						totalBytes: g.total_vram
+					}))
 				: [],
 		models: modelsFrom(installed, loaded, downloadsFrom(installed, jobList)),
 		checkedAt

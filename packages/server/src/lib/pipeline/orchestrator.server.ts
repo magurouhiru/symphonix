@@ -59,7 +59,8 @@ export function approveAnyway(id: string): RunRecord {
 // 中断・失敗・判断待ちのステップを、もう一度そのステップからやり直す
 export function resumeRun(id: string): RunRecord {
 	const run = mustGet(id);
-	if (driving.has(id) || run.state === 'running' || run.state === 'done') throw new Error('再開できる状態ではありません');
+	if (driving.has(id) || run.state === 'running' || run.state === 'done')
+		throw new Error('再開できる状態ではありません');
 	const i = run.results.findIndex((r) => r.status !== 'done');
 	if (i < 0) throw new Error('すべて完了しています');
 	run.results[i].status = 'pending';

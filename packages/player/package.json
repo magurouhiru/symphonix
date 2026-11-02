@@ -1,12 +1,12 @@
 {
 	"name": "@symphonix/player",
-	"private": true,
 	"version": "0.0.1",
+	"private": true,
 	"description": "symphonix に接続し、作業フォルダでファイルの読み書きやコマンドの実行を受け持つ",
-	"type": "module",
 	"bin": {
 		"symphonix-player": "./dist/cli.js"
 	},
+	"type": "module",
 	"exports": {
 		".": {
 			"types": "./dist/player.d.ts",

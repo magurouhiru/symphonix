@@ -47,7 +47,7 @@ export function activate(context: vscode.ExtensionContext) {
 		player = createPlayer({
 			server: config.get('server', 'http://host.docker.internal:7373'),
 			root: path.resolve(folder.uri.fsPath, config.get('root', '')),
-			name: config.get('name') || undefined,
+			name: config.get<string>('name') || undefined,
 			allow: config.get<string[]>('allow'),
 			log,
 			onStatus: showStatus

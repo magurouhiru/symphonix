@@ -2,11 +2,19 @@
 	"name": "symphonix-monorepo",
 	"private": true,
 	"type": "module",
-	"packageManager": "pnpm@10.28.0",
 	"scripts": {
 		"dev": "pnpm --filter @symphonix/server dev",
 		"build": "pnpm -r build",
 		"check": "pnpm -r check",
-		"player": "pnpm --filter @symphonix/player start --root ../../workspace"
-	}
+		"player": "pnpm --filter @symphonix/player start --root ../../workspace",
+		"lint": "oxlint --deny-warnings",
+		"format": "oxfmt",
+		"format:check": "oxfmt --check"
+	},
+	"devDependencies": {
+		"oxfmt": "0.75.0",
+		"oxlint": "1.90.0",
+		"oxlint-tsgolint": "^7.0.2005"
+	},
+	"packageManager": "pnpm@10.28.0"
 }

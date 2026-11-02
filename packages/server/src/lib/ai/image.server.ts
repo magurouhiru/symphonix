@@ -3,7 +3,7 @@ import { apiUrl, requestJson } from './localai.server.js';
 import { roleModel } from './model-settings.server.js';
 
 export async function generateImage(prompt: string, size = '512x512'): Promise<string> {
-	const data = await requestJson('/images/generations', {
+	const data = await requestJson<{ data?: { b64_json?: unknown }[] }>('/images/generations', {
 		json: { model: roleModel('image'), prompt, size, response_format: 'b64_json' }
 	});
 	const b64 = data.data?.[0]?.b64_json;

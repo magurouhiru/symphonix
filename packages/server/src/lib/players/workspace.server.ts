@@ -24,7 +24,9 @@ export function isPlayerFile(rel: string): boolean {
 function inside(base: string, relative: string): string {
 	const joined = path.posix.normalize(path.posix.join(base, relative.replace(/\\/g, '/')));
 	const outside =
-		base === ROOT_PROJECT ? joined === '.' || joined === '..' || joined.startsWith('../') : !joined.startsWith(base + '/');
+		base === ROOT_PROJECT
+			? joined === '.' || joined === '..' || joined.startsWith('../')
+			: !joined.startsWith(base + '/');
 	if (outside || path.posix.isAbsolute(relative)) {
 		throw new Error(`プロジェクトの外には書き込めません: ${relative}`);
 	}

@@ -50,7 +50,7 @@ export class PipelineRun {
 		this.run = run;
 		this.error = '';
 		clearTimeout(this.#timer);
-		if (run.state === 'running') this.#timer = setTimeout(() => this.#poll(run.id), POLL_MS);
+		if (run.state === 'running') this.#timer = setTimeout(() => void this.#poll(run.id), POLL_MS);
 	}
 
 	async #poll(id: string) {
@@ -59,7 +59,7 @@ export class PipelineRun {
 		} catch (e) {
 			// サーバーの再起動中などは取れないので、少し待って取り直す
 			this.error = e instanceof Error ? e.message : String(e);
-			this.#timer = setTimeout(() => this.#poll(id), POLL_MS * 2);
+			this.#timer = setTimeout(() => void this.#poll(id), POLL_MS * 2);
 		}
 	}
 }

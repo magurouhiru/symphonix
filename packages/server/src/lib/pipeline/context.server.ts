@@ -8,7 +8,8 @@ export const CONTEXT_BUDGET = 40_000;
 // 1 ファイルがこれより大きければ中身は渡さない
 const MAX_FILE_SIZE = 20_000;
 // 中身を読んでも役に立たないファイル
-const SKIP = /(^|\/)(package-lock\.json|pnpm-lock\.yaml|yarn\.lock)$|\.(png|jpe?g|gif|webp|ico|svg|woff2?|ttf|eot|mp3|wav|mp4|zip|gz|pdf|wasm)$/i;
+const SKIP =
+	/(^|\/)(package-lock\.json|pnpm-lock\.yaml|yarn\.lock)$|\.(png|jpe?g|gif|webp|ico|svg|woff2?|ttf|eot|mp3|wav|mp4|zip|gz|pdf|wasm)$/i;
 
 export type ProjectContext = {
 	// プロジェクトにあるすべてのファイル
@@ -31,7 +32,14 @@ export async function projectContext(
 	const readable = entries.filter((e) => !SKIP.test(e.path) && e.size <= MAX_FILE_SIZE);
 	const total = readable.reduce((sum, e) => sum + e.size, 0);
 	if (total <= CONTEXT_BUDGET) {
-		return { paths, files: await readProject(target, readable.map((e) => e.path)), partial: readable.length < paths.length };
+		return {
+			paths,
+			files: await readProject(
+				target,
+				readable.map((e) => e.path)
+			),
+			partial: readable.length < paths.length
+		};
 	}
 	const picked = await pickFiles(task, readable, model);
 	// 必ず渡すもの、モデルが選んだものの順に、上限まで入れる

@@ -24,7 +24,10 @@ export async function createPlan(request: string, target?: Target): Promise<Plan
 	const context = target ? await projectContext(target, want, persona.resolvedModel) : null;
 	const existing = context && context.paths.length > 0;
 	const messages = [
-		{ role: 'system' as const, content: withPersona(persona.prompt, SYSTEM_PROMPT + (existing ? EXISTING_PROMPT : '')) },
+		{
+			role: 'system' as const,
+			content: withPersona(persona.prompt, SYSTEM_PROMPT + (existing ? EXISTING_PROMPT : ''))
+		},
 		{ role: 'user' as const, content: existing ? `${want}\n\nExisting project:\n${contextText(context)}` : want }
 	];
 	// 読み取れない返事が来たら、もう一度だけ頼み直す
@@ -38,6 +41,9 @@ export async function createPlan(request: string, target?: Target): Promise<Plan
 }
 
 // 小さいモデルは JSON の前後に文章やコードフェンスを付けがちなので、最初の { から最後の } までを読む
+// モデルが文字列以外を返したときは空にする（[object Object] を混ぜない）
+const text = (v: unknown): string => (typeof v === 'string' ? v : '');
+
 export function parsePlan(content: string): PlanStep[] {
 	const start = content.indexOf('{');
 	const end = content.lastIndexOf('}');
@@ -48,7 +54,7 @@ export function parsePlan(content: string): PlanStep[] {
 	const steps: unknown[] = Array.isArray(data.steps) ? data.steps : [];
 	const result = steps
 		.filter((s): s is Record<string, unknown> => typeof s === 'object' && s !== null)
-		.map((s) => ({ title: String(s.title ?? ''), description: String(s.description ?? '') }))
+		.map((s) => ({ title: text(s.title), description: text(s.description) }))
 		.filter((s) => s.title);
 	if (result.length === 0) {
 		throw new Error(`プランにステップがありません: ${content}`);

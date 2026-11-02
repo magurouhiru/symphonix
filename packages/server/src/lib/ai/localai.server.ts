@@ -48,13 +48,17 @@ export async function request(path: string, options: RequestOptions = {}): Promi
 	}
 	if (!res.ok) {
 		const body = await res.text().catch(() => '');
-		throw new LocalAIError(`LocalAI がエラーを返しました（${path}、${res.status}）: ${body.slice(0, 2000)}`, res.status, body);
+		throw new LocalAIError(
+			`LocalAI がエラーを返しました（${path}、${res.status}）: ${body.slice(0, 2000)}`,
+			res.status,
+			body
+		);
 	}
 	return res;
 }
 
 // 呼び出して、返ってきた JSON を返す
-export async function requestJson<T = any>(path: string, options: RequestOptions = {}): Promise<T> {
+export async function requestJson<T = unknown>(path: string, options: RequestOptions = {}): Promise<T> {
 	const timeoutMs = options.timeoutMs ?? GENERATE_TIMEOUT_MS;
 	const res = await request(path, options);
 	try {

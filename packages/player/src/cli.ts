@@ -14,8 +14,8 @@ const { values } = parseArgs({
 });
 
 const player = createPlayer({
-	server: values.server!,
-	root: values.root!,
+	server: values.server,
+	root: values.root,
 	name: values.name,
 	allow: values.allow
 		?.split(',')
@@ -25,7 +25,7 @@ const player = createPlayer({
 });
 
 process.on('SIGINT', () => {
-	player.stop();
+	void player.stop();
 	process.exit(0);
 });
 await player.start();

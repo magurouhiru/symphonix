@@ -24,8 +24,7 @@
 			if (res.ok) {
 				image = `data:image/png;base64,${data.b64}`;
 				used = data.prompt;
-			}
-			else error = data.error;
+			} else error = data.error;
 		} catch (e) {
 			error = String(e);
 		} finally {

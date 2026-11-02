@@ -185,9 +185,9 @@ export function createPlayer({
 
 	async function handle(job: Job): Promise<JobReply> {
 		try {
-			const handler = handlers[job.method] as (params: unknown) => Promise<unknown>;
+			const handler = handlers[job.method] as ((params: unknown) => Promise<unknown>) | undefined;
 			if (!handler) throw new Error(`知らない仕事です: ${job.method}`);
-			return { jobId: job.id, result: await handler(job.params ?? {}) };
+			return { jobId: job.id, result: await handler(job.params) };
 		} catch (e) {
 			return { jobId: job.id, error: e instanceof Error ? e.message : String(e) };
 		}
@@ -210,10 +210,12 @@ export function createPlayer({
 				const reply = await handle(job);
 				await api(playerApi.result(id), { method: 'POST', body: JSON.stringify(reply) });
 			} catch (e) {
+				// stop() は await の間に stopped を書き換えるが、TypeScript はそれを追えず常に false と見なす
+				// oxlint-disable-next-line typescript/no-unnecessary-condition
 				if (stopped) break;
 				if (e instanceof HttpError && e.status === 404) id = ''; // symphonix が再起動した（つなぎ直せば同じ id に戻る）
 				setStatus('connecting');
-				log(`接続できません（${e instanceof Error ? e.message : e}）。3 秒後にやり直します`);
+				log(`接続できません（${e instanceof Error ? e.message : String(e)}）。3 秒後にやり直します`);
 				await wait(3000);
 			}
 		}
