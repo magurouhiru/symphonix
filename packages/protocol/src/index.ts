@@ -17,7 +17,9 @@ export const IGNORED_DIRS = ['node_modules', '.git', 'dist'] as const;
 // プレイヤーが既定で実行してよいコマンド
 export const DEFAULT_ALLOW = ['node', 'npm', 'python3'] as const;
 
-export type ConnectRequest = { name: string; root: string; allow: string[] };
+// host はプレイヤーが動いているマシンのホスト名（devcontainer ならコンテナ ID の先頭 12 文字）。
+// symphonix は host と root から id を決めるので、つなぎ直しても同じ id になる
+export type ConnectRequest = { name: string; host: string; root: string; allow: string[] };
 export type ConnectResponse = { id: string };
 
 // 仕事の種類ごとの引数と結果。パスはすべてプレイヤーの作業フォルダからの相対パス（/ 区切り）
@@ -40,4 +42,4 @@ export type Job<M extends Method = Method> = { id: string; method: M; params: Me
 export type JobReply = { jobId: string; result?: unknown; error?: string };
 
 // symphonix の画面に出すプレイヤーの情報
-export type PlayerInfo = { id: string; name: string; root: string; allow: string[]; connected: boolean };
+export type PlayerInfo = { id: string; name: string; host: string; root: string; allow: string[]; connected: boolean };

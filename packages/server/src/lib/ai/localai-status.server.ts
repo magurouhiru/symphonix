@@ -5,10 +5,7 @@ import type { DownloadStatus, GpuStatus, ModelStatus, ServerState, StatusReport 
 import { personaModels } from '#lib/personas/store.server.js';
 import { roleModels } from './model-settings.server.js';
 import { errorMessage } from '#lib/shared/errors.js';
-
-const baseUrl = process.env.AI_BASE_URL ?? 'http://localai:8080/v1';
-// /readyz や /system は /v1 の外にある
-const rootUrl = baseUrl.replace(/\/v1\/?$/, '');
+import { LocalAIError, request, requestJson, STATUS_TIMEOUT_MS } from './localai.server.js';
 
 // symphonix が今使っているモデル（設定画面で変わるので毎回読む）
 function requiredModels(): string[] {
@@ -37,19 +34,26 @@ type Job = {
 	deletion?: boolean;
 };
 
-async function getJson(path: string): Promise<any> {
-	const res = await fetch(`${rootUrl}${path}`, { signal: AbortSignal.timeout(5000) });
-	if (!res.ok) throw new Error(`${path}: ${res.status}`);
-	return res.json();
+// /v1/models 以外も含め、すべて rootUrl からのパスで呼ぶ
+const getJson = (path: string) => requestJson(path, { root: true, timeoutMs: STATUS_TIMEOUT_MS });
+
+function parseReason(body: string): string | undefined {
+	try {
+		return JSON.parse(body).reason;
+	} catch {
+		return undefined;
+	}
 }
 
 async function serverState(): Promise<{ server: ServerState; reason?: string }> {
 	try {
-		const res = await fetch(`${rootUrl}/readyz`, { signal: AbortSignal.timeout(5000) });
-		if (res.ok) return { server: 'ready' };
-		const body = await res.json().catch(() => ({}));
-		return { server: 'starting', reason: body.reason };
+		await request('/readyz', { root: true, timeoutMs: STATUS_TIMEOUT_MS });
+		return { server: 'ready' };
 	} catch (e) {
+		// 返事はあるが準備中（503 など）なら starting。理由は本文の JSON にある
+		if (e instanceof LocalAIError && e.status !== undefined) {
+			return { server: 'starting', reason: parseReason(e.body ?? '') };
+		}
 		return { server: 'down', reason: errorMessage(e) };
 	}
 }
@@ -73,13 +77,8 @@ async function ensureModels(installed: string[], jobs: Record<string, Job>) {
 		const mine = requested.get(id);
 		if (mine && Date.now() - mine.at < RETRY_MS) continue;
 		try {
-			const res = await fetch(`${rootUrl}/models/apply`, {
-				method: 'POST',
-				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify({ id }),
-				signal: AbortSignal.timeout(5000)
-			});
-			if (res.ok) requested.set(id, { jobId: (await res.json()).uuid ?? '', at: Date.now() });
+			const job = await requestJson('/models/apply', { root: true, json: { id }, timeoutMs: STATUS_TIMEOUT_MS });
+			requested.set(id, { jobId: job.uuid ?? '', at: Date.now() });
 		} catch {
 			// 次の確認で再試行する
 		}
